@@ -1,4 +1,4 @@
-import * as editor from "$sb/syscalls/editor.ts"
+import { editor } from "@silverbulletmd/silverbullet/syscalls"
 
 import script from "./dist/modal.iife.js.ts"
 import html from "./dist/modal.html.ts"

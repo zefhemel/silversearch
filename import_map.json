@@ -1,5 +1,5 @@
 {
     "imports": {
-        "$sb/": "https://deno.land/x/silverbullet@edge/plug-api/"
+        "@silverbulletmd/silverbullet/syscalls": "jsr:@silverbulletmd/silverbullet@^2.0.0-pre/syscalls"
     }
 }

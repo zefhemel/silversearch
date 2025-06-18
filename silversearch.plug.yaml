@@ -4,6 +4,6 @@ functions:
     path: "./silversearch.ts:openSearch"
     command:
       name: "Silversearch: Search"
-      key: Ctrl-q
+      key: Ctrl-Alt-q
       mac: Cmd-q
 #      requireEditor: page

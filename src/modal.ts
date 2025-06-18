@@ -1,6 +1,6 @@
 import "./modal.css"
 import { mount } from "svelte"
-import Modal from "./Modal.svelte"
+import Modal from "./components/Modal.svelte"
 
 function mountModal() {
     mount(Modal, {
