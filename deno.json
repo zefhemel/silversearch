@@ -1,0 +1,20 @@
+{
+    "tasks": {
+        "build": "npm run build -- && deno run -A https://github.com/silverbulletmd/silverbullet/releases/download/edge/plug-compile.js --info -c deno.json silversearch.plug.yaml"
+    },
+    "imports": {
+        "minisearch": "https://esm.sh/minisearch@7.1.2",
+        "search-query-parser": "https://esm.sh/search-query-parser@1.6.0",
+        "zod": "npm:zod@3.25.67/v4",
+        "markdown-link-extractor": "npm:markdown-link-extractor@4.0.2",
+        "@silverbulletmd/silverbullet/syscalls": "jsr:@silverbulletmd/silverbullet@^2.0.0-pre/syscalls",
+        "@silverbulletmd/silverbullet/type/index": "jsr:@silverbulletmd/silverbullet@^2.0.0-pre/type/index",
+        "@silverbulletmd/silverbullet/type/event": "jsr:@silverbulletmd/silverbullet@^2.0.0-pre/type/event"
+    },
+    "exclude": ["modal/"],
+    "lock": false,
+    "compilerOptions": {
+        "lib": ["es2021", "dom"]
+    },
+    "nodeModulesDir": "none"
+}

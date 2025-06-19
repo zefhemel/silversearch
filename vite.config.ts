@@ -14,7 +14,7 @@ export default {
     build: {
         lib: {
             name: "silversearch",
-            entry: ["src/modal.ts"],
+            entry: ["modal/modal.ts"],
             formats: ["iife"],
             cssFileName: "modal",
             fileName: "modal"
@@ -27,7 +27,7 @@ export default {
             closeBundle: async () => {
                 // Prepare HTML file by combining it with the css
                 const css = await fs.readFile("dist/modal.css", "utf8");
-                const html = await fs.readFile("src/modal.html", "utf8");
+                const html = await fs.readFile("modal/modal.html", "utf8");
 
                 const content = `<style>${css.replaceAll("\n", "")}</style>\n${html}`;
 

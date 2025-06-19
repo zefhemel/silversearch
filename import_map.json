@@ -1,5 +1,0 @@
-{
-    "imports": {
-        "@silverbulletmd/silverbullet/syscalls": "jsr:@silverbulletmd/silverbullet@^2.0.0-pre/syscalls"
-    }
-}

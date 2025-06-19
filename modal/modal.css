@@ -1,5 +1,8 @@
+/* Some adjustments cause the enviornment is a little different */
 html, body {
-    /*Some adjustments cause the enviornment is a little different*/
     background: none !important;
+}
+
+* {
     font-family: var(--ui-font);
 }

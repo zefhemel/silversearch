@@ -10,8 +10,7 @@ function mountModal() {
 
 // TODO
 // Be careful with the timings here
+// See Treeview Plug for reference
 // const customStyles = await getCustomStyles();
-
-console.log("Value:", document.getElementsByTagName("html")[0].attributes.getNamedItem("data-theme")?.value);
 
 mountModal();

@@ -1,9 +1,19 @@
 name: silversearch
 functions:
-  search:
-    path: "./silversearch.ts:openSearch"
+  openSearch:
+    path: "./worker/silversearch.ts:openSearch"
     command:
       name: "Silversearch: Search"
       key: Ctrl-Alt-q
       mac: Cmd-q
-#      requireEditor: page
+  init:
+    path: "./worker/silversearch.ts:init"
+    events:
+      - "editor:init"
+  index:
+    path: "./worker/silversearch.ts:index"
+    events:
+      - "page:index"
+  search:
+    path: "./worker/silversearch.ts:search"
+    syscall: "silversearch.search"
