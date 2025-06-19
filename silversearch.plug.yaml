@@ -6,6 +6,10 @@ functions:
       name: "Silversearch: Search"
       key: Ctrl-Alt-q
       mac: Cmd-q
+  reindex:
+    path: "./worker/silversearch.ts:reindex"
+    command:
+      name: "Silversearch: Full Reindex"
   init:
     path: "./worker/silversearch.ts:init"
     events:

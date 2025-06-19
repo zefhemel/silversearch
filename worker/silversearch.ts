@@ -10,22 +10,25 @@ import { getPlugConfig } from "./util/settings.ts";
 import { ResultNote } from "../shared/global.ts";
 
 // So this will be a global variable in a service worker, so the lifetime is kind of uncertain, especially if
-// we don't have direct access to events, i.e. we can't trust the results of this AT ALL
-const searchEngine = new SearchEngine();
+// we don't have direct access to events, i.e. we can't trust that this exists AT ALL
+let searchEngine: SearchEngine | null = null;
 
 let indexQueue: string[] = [];
 
 // TODO: Handle multiple calls of this
 async function checkIfInitalized() {
-    if (searchEngine.isInitalized()) return;
+    if (searchEngine) return;
+
+    const settings = await getPlugConfig();
+    searchEngine = new SearchEngine(settings);
 
     // We want to try to load from cache, if that fails create the index and cache it
-    const cacheExists = await searchEngine.loadFromCache();
+    const cacheExists = await searchEngine.loadFromCache(settings);
 
     if (!cacheExists) {
         await searchEngine.fullReindex();
     } else if (indexQueue.length) {
-        searchEngine.indexPages(indexQueue);
+        await searchEngine.indexPages(indexQueue);
         indexQueue = [];
     }
 }
@@ -47,7 +50,7 @@ export async function init(): Promise<void> {
 
 export async function index({ name }: IndexTreeEvent) {
     // We piggyback of the index event here as that pretty much excatly aligns with our needs.
-    if (!searchEngine.isInitalized()) indexQueue.push(name);
+    if (!searchEngine) indexQueue.push(name);
     else await searchEngine.indexPage(name);
 }
 
@@ -61,5 +64,10 @@ export async function search(searchTerm: string): Promise<ResultNote[]> {
       ignoreArabicDiacritics: settings.ignoreArabicDiacritics,
     });
 
-    return searchEngine.getSuggestions(query);
+    return searchEngine!.getSuggestions(query);
+}
+
+export async function reindex() {
+    await SearchEngine.deleteCache();
+    await checkIfInitalized();
 }

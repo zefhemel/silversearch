@@ -2,8 +2,8 @@ import { clientStore, editor, space } from "@silverbulletmd/silverbullet/syscall
 import { PageMeta } from "@silverbulletmd/silverbullet/type/index";
 import { SearchResult, Options, default as MiniSearch } from "minisearch"
 import { Query } from "./query.ts";
-import { getPlugConfig } from "./settings.ts";
-import { tokenizeForSearch } from "./tokenizer.ts";
+import { getPlugConfig, SilversearchSettings } from "./settings.ts";
+import { tokenizeForIndexing, tokenizeForSearch } from "./tokenizer.ts";
 import { removeDiacritics, stripMarkdownCharacters } from "./utils.ts";
 import { CompletePage, IndexablePage, RecencyCutoff } from "./global.ts";
 import { getMatches, makeExcerpt } from "./textprocessing.ts";
@@ -13,12 +13,12 @@ export class SearchEngine {
     private minisearch: MiniSearch;
     private documentCache: Map<string, CompletePage>;
 
-    constructor() {
-        this.minisearch = new MiniSearch(SearchEngine.getOptions());
+    constructor(settings: SilversearchSettings) {
+        this.minisearch = new MiniSearch(SearchEngine.getOptions(settings));
         this.documentCache = new Map();
     }
 
-    public async loadFromCache(): Promise<boolean> {
+    public async loadFromCache(settings: SilversearchSettings): Promise<boolean> {
         const cache = await clientStore.get("silversearch-cache");
 
         if (!cache || typeof (cache) !== "string") {
@@ -28,9 +28,13 @@ export class SearchEngine {
             return false;
         }
 
-        this.minisearch = await MiniSearch.loadJSONAsync(cache, SearchEngine.getOptions());
+        this.minisearch = await MiniSearch.loadJSONAsync(cache, SearchEngine.getOptions(settings));
 
         return true;
+    }
+
+    public static async deleteCache() {
+        await clientStore.del("silversearch-cache");
     }
 
     public async writeToCache(): Promise<void> {
@@ -42,8 +46,6 @@ export class SearchEngine {
     public async fullReindex(): Promise<void> {
         await editor.flashNotification("Silversearch: Fully reindexing, this can cause performance problems");
         this.minisearch.removeAll();
-
-        console.log("FULL REINDEX");
 
         // We only index pages right now
         const pages = await space.listPages();
@@ -58,18 +60,17 @@ export class SearchEngine {
     }
 
     public async indexPage(pageRef: string): Promise<void> {
-        const pageMeta = await space.getPageMeta(pageRef);
-
-        this.minisearch.add(SearchEngine.pageMetaToIndexablePage(pageMeta));
-
-        await this.writeToCache();
+        await this.indexPages([pageRef]);
     }
 
     public async indexPages(pageRefs: string[]): Promise<void> {
         for (const pageRef in pageRefs) {
             const pageMeta = await space.getPageMeta(pageRef);
 
-            this.minisearch.add(SearchEngine.pageMetaToIndexablePage(pageMeta));
+            const document = await SearchEngine.pageMetaToIndexablePage(pageMeta);
+
+            if (this.minisearch.has(document.ref)) this.minisearch.replace(document);
+            else this.minisearch.add(document);
         }
 
         await this.writeToCache();
@@ -327,16 +328,11 @@ export class SearchEngine {
         }
     }
 
-    public isInitalized(): boolean {
-        // If there are no documents it's safe to assume it's not initialized
-        return this.minisearch.documentCount > 0;
-    }
-
     private static async pageMetaToIndexablePage(page: PageMeta): Promise<IndexablePage> {
         const content = await space.readPage(page.ref);
 
         return {
-            ref: page.ref,
+            ref: page.name,
             basename: page.name.split("/").pop() ?? page.name,
             directory: page.name.split("/").splice(-1).join() ?? "",
             aliases: page.aliases ?? [],
@@ -346,8 +342,13 @@ export class SearchEngine {
         }
     }
 
-    private static getOptions(): Options<IndexablePage> {
+    private static getOptions(settings: SilversearchSettings): Options<IndexablePage> {
         return {
+            tokenize: (text: string) => tokenizeForIndexing(text, { tokenizeUrls: settings.tokenizeUrls }),
+            processTerm: (term: string) => (settings.ignoreDiacritics
+                ? removeDiacritics(term, settings.ignoreArabicDiacritics)
+                : term
+                ).toLowerCase(),
             idField: "ref",
             fields: [
                 "content",
@@ -356,10 +357,7 @@ export class SearchEngine {
                 "aliases",
                 "tags"
             ],
-            processTerm: (term: string): string => {
-                // Filter diatrics here
-                return term.toLowerCase();
-            },
+            // storeFields: ['tags', 'mtime'],
         }
     }
 }
