@@ -5,8 +5,8 @@ import { getPlugConfig } from "./settings.ts";
 import { removeDiacritics } from "./utils.ts";
 import { SearchMatch } from "../../shared/global.ts";
 
-function escapeRegex(str: string) {
-    return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+function escapeRegExp(string: string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export function stringsToRegex(strings: string[]): RegExp {
@@ -16,7 +16,7 @@ export function stringsToRegex(strings: string[]): RegExp {
     strings.sort((a, b) => b.length - a.length);
 
     const joined = `(${strings
-        .map(s => `\\b${escapeRegex(s)}\\b|${escapeRegex(s)}`)
+        .map(s => `\\b${escapeRegExp(s)}\\b|${escapeRegExp(s)}`)
         .join('|')})`;
 
     return new RegExp(`${joined}`, 'gui');

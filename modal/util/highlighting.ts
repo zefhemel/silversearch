@@ -1,7 +1,7 @@
 import { SearchMatch } from "../../shared/global";
 
-function escapeRegex(str: string) {
-    return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+function escapeRegExp(str: string) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export function highlightText(text: string, matches: SearchMatch[]): string {
@@ -12,7 +12,7 @@ export function highlightText(text: string, matches: SearchMatch[]): string {
     try {
         return text.replace(
             new RegExp(
-                `(${matches.map(item => escapeRegex(item.match)).join('|')})`,
+                `(${matches.map(item => escapeRegExp(item.match)).join('|')})`,
                 'giu'
             ),
             `<span class="${highlightClass}">$1</span>`

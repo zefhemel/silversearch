@@ -356,7 +356,7 @@ export class SearchEngine {
                 "directory",
                 "aliases",
                 "tags"
-            ],
+            ]
             // storeFields: ['tags', 'mtime'],
         }
     }

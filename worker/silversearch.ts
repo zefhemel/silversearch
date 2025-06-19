@@ -69,5 +69,7 @@ export async function search(searchTerm: string): Promise<ResultNote[]> {
 
 export async function reindex() {
     await SearchEngine.deleteCache();
+    searchEngine = null;
+
     await checkIfInitalized();
 }
