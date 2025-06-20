@@ -104,12 +104,12 @@ export class SearchEngine {
             fuzzy: term =>
                 term.length <= 3 ? 0 : term.length <= 5 ? fuzziness / 2 : fuzziness,
             boost: {
-                basename: settings.weightBasename,
-                aliases: settings.weightBasename,
-                displayName: settings.weightBasename,
-                directory: settings.weightDirectory,
-                tags: settings.weightTags,
-                unmarkedTags: settings.weightTags
+                basename: settings.weights.basename,
+                aliases: settings.weights.aliases,
+                displayName: settings.weights.displayName,
+                directory: settings.weights.directory,
+                tags: settings.weights.tags,
+                unmarkedTags: settings.weights.tags
             },
             tokenize: text => [text],
             boostDocument(_id, _term, storedFields) {
