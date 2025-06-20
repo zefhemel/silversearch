@@ -1,7 +1,7 @@
 import { removeDiacritics } from "./utils.ts";
-import { parse } from 'search-query-parser'
+import { parse } from "search-query-parser";
 
-const keywords = ['ext', 'path'] as const;
+const keywords = ["ext", "path"] as const;
 
 type Keywords = {
     [K in typeof keywords[number]]?: string[]

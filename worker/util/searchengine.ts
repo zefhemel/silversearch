@@ -5,7 +5,7 @@ import { Query } from "./query.ts";
 import { getPlugConfig, SilversearchSettings } from "./settings.ts";
 import { tokenizeForIndexing, tokenizeForSearch } from "./tokenizer.ts";
 import { removeDiacritics, stripMarkdownCharacters } from "./utils.ts";
-import { CompletePage, IndexablePage, RecencyCutoff } from "./global.ts";
+import { CompletePage, IndexableDocument, RecencyCutoff } from "./global.ts";
 import { getMatches, makeExcerpt } from "./textprocessing.ts";
 import { ResultNote } from "../../shared/global.ts";
 
@@ -50,7 +50,7 @@ export class SearchEngine {
         // We only index pages right now
         const pages = await space.listPages();
 
-        const cleanedPages: IndexablePage[] = await Promise.all(pages.map(SearchEngine.pageMetaToIndexablePage));
+        const cleanedPages: IndexableDocument[] = await Promise.all(pages.map(SearchEngine.pageMetaToIndexablePage));
 
         await this.minisearch.addAllAsync(cleanedPages);
 
@@ -126,7 +126,8 @@ export class SearchEngine {
         if (query.query.ext?.length) {
             results = results.filter(r => {
                 // ".can" should match ".canvas"
-                const ext = '.' + r.id.split('.').pop();
+                // If the document doesn't have an extension it's a page
+                const ext = r.id.includes(".") ? "." + r.id.split('.').pop() : ".md";
                 return query.query.ext?.some(e =>
                     ext.startsWith(e.startsWith('.') ? e : '.' + e)
                 );
@@ -328,7 +329,7 @@ export class SearchEngine {
         }
     }
 
-    private static async pageMetaToIndexablePage(page: PageMeta): Promise<IndexablePage> {
+    private static async pageMetaToIndexablePage(page: PageMeta): Promise<IndexableDocument> {
         const content = await space.readPage(page.ref);
 
         return {
@@ -342,7 +343,7 @@ export class SearchEngine {
         }
     }
 
-    private static getOptions(settings: SilversearchSettings): Options<IndexablePage> {
+    private static getOptions(settings: SilversearchSettings): Options<IndexableDocument> {
         return {
             tokenize: (text: string) => tokenizeForIndexing(text, { tokenizeUrls: settings.tokenizeUrls }),
             processTerm: (term: string) => (settings.ignoreDiacritics

@@ -4,7 +4,7 @@ functions:
     path: "./worker/silversearch.ts:openSearch"
     command:
       name: "Silversearch: Search"
-      key: Ctrl-Alt-q
+      key: Ctrl-s
       mac: Cmd-q
   reindex:
     path: "./worker/silversearch.ts:reindex"
