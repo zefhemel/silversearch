@@ -16,7 +16,8 @@ async function mountModal() {
     ]);
 
     mount(Modal, {
-        target: document.querySelector("#container")!
+        target: document.querySelector("#container")!,
+        props: { defaultQuery: globalThis.DEFAULT_QUERY ?? "" }
     });
 }
 

@@ -4,9 +4,11 @@
     import Result from "./Result.svelte";
     import { tick } from "svelte";
 
+    const { defaultQuery }: { defaultQuery: string } = $props();
+
     let dialog: HTMLDialogElement;
 
-    let query: string = $state("");
+    let query: string = $state(defaultQuery);
 
     let results: ResultNote[] = $state([]);
     let searching = $state(false);

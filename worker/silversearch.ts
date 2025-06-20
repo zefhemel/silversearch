@@ -8,6 +8,7 @@ import { SearchEngine } from "./util/searchengine.ts";
 import { Query } from "./util/query.ts";
 import { getPlugConfig } from "./util/settings.ts";
 import { ResultNote } from "../shared/global.ts";
+import { DEFAULT_CIPHERS } from "node:tls";
 
 // So this will be a global variable in a service worker, so the lifetime is kind of uncertain, especially if
 // we don't have direct access to events, i.e. we can't trust that this exists AT ALL
@@ -33,13 +34,13 @@ async function checkIfInitalized() {
     }
 }
 
-export async function openSearch(): Promise<void> {
+export async function openSearch(defaultQuery: string  = ""): Promise<void> {
     await editor.showPanel(
         "modal",
         // We can't have a falsy value (0) here, because of some silverbullet oddities
         1,
         html,
-        script,
+        defaultQuery ? `globalThis.DEFAULT_QUERY = "${defaultQuery}";` + script : script,
     );
 }
 

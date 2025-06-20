@@ -2,7 +2,7 @@
     import type { ResultNote } from "../../shared/global";
     import { highlightText } from "../util/highlighting";
 
-    let { result, selected, onclick, onmousemove }: { result: ResultNote, selected: boolean, onclick: (e: MouseEvent) => void, onmousemove: (e: MouseEvent) => void } = $props();
+    const { result, selected, onclick, onmousemove }: { result: ResultNote, selected: boolean, onclick: (e: MouseEvent) => void, onmousemove: (e: MouseEvent) => void } = $props();
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
