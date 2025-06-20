@@ -98,11 +98,11 @@
         {/each}
 
         {#if !result && !searching && query}
-            <span class="silversearch-apology">Silversearch found <code>0</code> results for your query</span>
+            <div class="silversearch-apology">Silversearch found <code>0</code> results for your query</div>
         {:else if !result && !searching}
             <SearchTips/>
         {:else if !result && searching}
-            <span class="silversearch-apology">Searching...</span>
+            <div class="silversearch-apology">Searching...</div>
         {/if}
     {/snippet}
 </ModalContainer>
