@@ -4,13 +4,14 @@ import Modal from "./components/Modal.svelte"
 
 async function mountModal() {
     await Promise.race([
-        new Promise((resolve) => setTimeout(resolve, 50)),
+        new Promise((resolve) => setTimeout(resolve, 75)),
         new Promise((resolve) => {
             const element = document.querySelector("link#stylesheet");
 
             if (!element) return;
 
             (element as HTMLLinkElement).onload = resolve;
+
         })
     ]);
 

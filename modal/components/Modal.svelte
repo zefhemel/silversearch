@@ -122,6 +122,7 @@
         </div>
     </div>
 
+    <div class="sb-help-text">Press <code>Enter</code> to open the selected Page.</div>
 
     <div class="sb-result-list" style="max-height: 80vh;">
         {#each results as result, i}
@@ -132,7 +133,15 @@
         {#if !results.length && !searching && query}
             <p class="silversearch-apology">Silversearch found 0 results for your query</p>
         {:else if !results.length && !searching}
-            <p class="silversearch-apology">Start typing to search with Silversearch</p>
+            <div class="silversearch-help">
+                <p>Some Advanced Tips:</p>
+                <ul>
+                    <li>Use <code>path:&quot;&lt;somepath&gt;&quot;</code> to restrict your results to corresponding paths</li>
+                    <li>Use <code>ext:&quot;png jpg&quot;</code> or <code>ext:png</code>, or a plain <code>.png</code> to specify the filetype(s)</li>
+                    <li>Use <code>&quot;exact expressions&quot;</code> in quotes to further filter the results returned by the query</li>
+                    <li>Use <code>-exclusions</code> to exclude notes containing certain words</li>
+                </ul>
+            </div>
         {:else if !results.length && searching}
             <!-- TODO: Think about this a little more indepth, maybe we should give somekind of feedback when loading -->
             <p class="silversearch-apology">Laoding...</p>
@@ -147,6 +156,22 @@
 
     .silversearch-apology {
         text-align: center;
+    }
+
+    .silversearch-help {
+        padding: 8px;
+        line-height: 1.5;
+        color: var(--modal-help-color);
+    }
+
+    .silversearch-help p {
+        margin: 0px;
+    }
+
+    .silversearch-help ul {
+        margin: 0px;
+        list-style-position: inside;
+        padding-left: 15px;
     }
 
     #mini-editor {
