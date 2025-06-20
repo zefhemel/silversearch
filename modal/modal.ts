@@ -2,7 +2,18 @@ import "./modal.css"
 import { mount } from "svelte"
 import Modal from "./components/Modal.svelte"
 
-function mountModal() {
+async function mountModal() {
+    await Promise.race([
+        new Promise((resolve) => setTimeout(resolve, 50)),
+        new Promise((resolve) => {
+            const element = document.querySelector("link#stylesheet");
+
+            if (!element) return;
+
+            (element as HTMLLinkElement).onload = resolve;
+        })
+    ]);
+
     mount(Modal, {
         target: document.querySelector("#container")!
     });

@@ -86,7 +86,7 @@
     async function scrollIntoView() {
         await tick();
 
-        const element = document.querySelector(".sb-selected-option");
+        const element = document.querySelector(".silversearch-selected");
 
         if (!element) return;
 

@@ -13,7 +13,7 @@ export class Query {
     };
     #inQuotes: string[];
 
-    constructor(text = '', options: { ignoreDiacritics: boolean, ignoreArabicDiacritics: boolean }) {
+    constructor(text = "", options: { ignoreDiacritics: boolean, ignoreArabicDiacritics: boolean }) {
         if (options.ignoreDiacritics) {
             text = removeDiacritics(text, options.ignoreArabicDiacritics);
         }
