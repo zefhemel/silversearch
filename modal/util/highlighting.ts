@@ -5,7 +5,7 @@ function escapeRegExp(str: string) {
 }
 
 export function highlightText(text: string, matches: SearchMatch[]): string {
-    const highlightClass = "sb-highlight"
+    const highlightClass = "silversearch-highlight"
 
     if (!matches.length) return text;
 

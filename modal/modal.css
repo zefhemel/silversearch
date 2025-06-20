@@ -10,3 +10,7 @@ html, body {
 code {
     font-family: monospace;
 }
+
+.silversearch-highlight {
+    background-color: color-mix(in srgb, var(--editor-highlight-background-color), 50% transparent);
+}

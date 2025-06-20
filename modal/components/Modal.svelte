@@ -135,7 +135,7 @@
         </div>
     </div>
 
-    <div class="sb-help-text">Press <code>Enter</code> to open the selected Page.</div>
+    <div class="sb-help-text">Press <code>Enter</code> to open the selected Page, press <code>Ctrl-Enter</code> to open the Page in a new Tab and press <code>Alt-Enter</code> to insert a Link at the Cursor.</div>
 
     <div class="sb-result-list" style="max-height: 80vh;">
         {#each results as result, i}
