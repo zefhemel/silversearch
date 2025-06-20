@@ -5,12 +5,7 @@ on:
 
 jobs:
   publish:
-    name: Publish
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
@@ -24,7 +19,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 23
-          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
