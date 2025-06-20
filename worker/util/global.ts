@@ -22,10 +22,13 @@ export type IndexableDocument = {
     directory: string;
     tags: string[];
     lastModified: number;
+    displayName: string;
 
     aliases: string[];
 
     content: string;
+    // deno-lint-ignore no-explicit-any
+    metadata: Record<string, any>;
 }
 
 export type CompletePage = IndexableDocument & {

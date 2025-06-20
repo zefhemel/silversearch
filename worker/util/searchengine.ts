@@ -67,13 +67,17 @@ export class SearchEngine {
 
     public async indexPages(pageRefs: string[]): Promise<void> {
         for (const pageRef of pageRefs) {
-            console.log("[Silversearch] Indexing ", pageRef);
-            const pageMeta = await space.getPageMeta(pageRef);
+            try {
+                console.log(`[Silversearch] Indexing ${pageRef}`);
+                const pageMeta = await space.getPageMeta(pageRef);
 
-            const document = await SearchEngine.pageMetaToIndexablePage(pageMeta);
+                const document = await SearchEngine.pageMetaToIndexablePage(pageMeta);
 
-            if (this.minisearch.has(document.ref)) this.minisearch.replace(document);
-            else this.minisearch.add(document);
+                if (this.minisearch.has(document.ref)) this.minisearch.replace(document);
+                else this.minisearch.add(document);
+            } catch (_) {
+                console.log(`[Silversearch] Failed to index ${pageRef}. Skipping!`);
+            }
         }
 
         await this.writeToCache();
@@ -102,7 +106,7 @@ export class SearchEngine {
             boost: {
                 basename: settings.weightBasename,
                 aliases: settings.weightBasename,
-                displayTitle: settings.weightBasename,
+                displayName: settings.weightBasename,
                 directory: settings.weightDirectory,
                 tags: settings.weightTags,
             },
@@ -162,6 +166,11 @@ export class SearchEngine {
             return results.filter(r => r.id === options.singleFilePath);
         }
 
+        // TODO: This could be heavy on performance. We should also use a map here
+        const documents = await Promise.allSettled(
+            results.map(async result => await this.getCompletePage(result.id))
+        ).then((docs) => docs.filter((doc) => doc.status === "fulfilled").map((doc) => doc.value));
+
         // Extract tags from the query
         const tags = query.getTags();
 
@@ -194,10 +203,11 @@ export class SearchEngine {
             }
 
 
-            const metadata = await space.getPageMeta(path);
+            const metadata = documents.find((d) => d.ref === path)?.metadata;
             if (metadata) {
                 // Boost custom properties
                 for (const { name, weight } of settings.weightCustomProperties) {
+                    // Get frontmatter property
                     const values = metadata[name];
                     if (values && result.terms.some(t => values.includes(t))) {
                         result.score *= weight;
@@ -215,11 +225,6 @@ export class SearchEngine {
 
         // Sort results and keep the 50 best
         results = results.sort((a, b) => b.score - a.score).slice(0, 50);
-
-        // TODO: This could be heavy on performance
-        const documents = await Promise.all(
-            results.map(async result => await this.getCompletePage(result.id))
-        );
 
         // If the search query contains quotes, filter out results that don't have the exact match
         const exactTerms = query.getExactTerms();
@@ -262,11 +267,9 @@ export class SearchEngine {
             singleFilePath: options?.singleFilePath,
         });
 
-        const documents = await Promise.all(
+        const documents = await Promise.allSettled(
             results.map(async result => await this.getCompletePage(result.id))
-        );
-
-        // TODO: Embedding ??
+        ).then((docs) => docs.filter((doc) => doc.status === "fulfilled").map((doc) => doc.value));
 
         // Map the raw results to get usable suggestions
         const resultNotes = await Promise.all(results.map(async result => {
@@ -322,27 +325,44 @@ export class SearchEngine {
     }
 
     private async getCompletePage(ref: string): Promise<CompletePage> {
-        const meta = await space.getPageMeta(ref);
+        let meta: PageMeta;
+
+        try {
+            meta = await space.getPageMeta(ref);
+        } catch (_) {
+            throw new Error("Couldn't find the specified page");
+        }
+
+        const cached = this.documentCache.get(ref);
+        if (cached && parseInt(meta.lastModified) === cached.lastModified) return cached;
 
         const result = await SearchEngine.pageMetaToIndexablePage(meta);
 
-        return {
+        const completePage = {
             ...result,
-            cleanedContent: stripMarkdownCharacters(removeDiacritics(result.content)),
+            cleanedContent: stripMarkdownCharacters(removeDiacritics(result.content))
         }
+
+        this.documentCache.set(ref, completePage);
+
+        return completePage;
     }
 
     private static async pageMetaToIndexablePage(page: PageMeta): Promise<IndexableDocument> {
         const content = await space.readPage(page.ref);
+
+        const metadata = Object.fromEntries(Object.entries(page).filter(([key, _]) => !["ref", "tag", "tags", "itags", "name", "created", "lastModified", "perm", "lastOpened", "pageDecoration", "aliases"].includes(key)));
 
         return {
             ref: page.name,
             basename: page.name.split("/").pop() ?? page.name,
             directory: page.name.split("/").splice(-1).join() ?? "",
             aliases: page.aliases ?? [],
+            displayName: page.displayName ?? "",
             tags: page.tags ?? [],
             content: content,
             lastModified: parseInt(page.lastModified),
+            metadata,
         }
     }
 
@@ -359,7 +379,8 @@ export class SearchEngine {
                 "basename",
                 "directory",
                 "aliases",
-                "tags"
+                "displayName",
+                // "tags"
             ]
             // storeFields: ['tags', 'mtime'],
         }
