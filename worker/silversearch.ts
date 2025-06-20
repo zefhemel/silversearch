@@ -1,4 +1,4 @@
-import { editor } from "@silverbulletmd/silverbullet/syscalls";
+import { editor, syscall } from "@silverbulletmd/silverbullet/syscalls";
 import { IndexTreeEvent } from "@silverbulletmd/silverbullet/type/event";
 
 import script from "../dist/modal.iife.js.ts"
@@ -41,6 +41,10 @@ export async function openSearch(): Promise<void> {
         html,
         script,
     );
+}
+
+export async function startSearch(): Promise<void> {
+    await syscall("silversearch.openSearch");
 }
 
 export async function init(): Promise<void> {

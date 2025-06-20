@@ -1,11 +1,14 @@
 name: silversearch
 functions:
-  openSearch:
-    path: "./worker/silversearch.ts:openSearch"
+  startSearch:
+    path: "./worker/silversearch.ts:startSearch"
     command:
       name: "Silversearch: Search"
       key: Ctrl-s
       mac: Cmd-q
+  openSearch:
+    path: "./worker/silversearch.ts:openSearch"
+    syscall: "silversearch.openSearch"
   reindex:
     path: "./worker/silversearch.ts:reindex"
     command:
