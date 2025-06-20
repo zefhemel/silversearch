@@ -59,7 +59,7 @@ export async function index({ name }: IndexTreeEvent) {
     else await searchEngine.indexPage(name);
 }
 
-export async function search(searchTerm: string): Promise<ResultPage[]> {
+export async function search(searchTerm: string, singleFilePath?: string): Promise<ResultPage[]> {
     await checkIfInitalized();
 
     const settings = await getPlugConfig();
@@ -69,7 +69,7 @@ export async function search(searchTerm: string): Promise<ResultPage[]> {
       ignoreArabicDiacritics: settings.ignoreArabicDiacritics,
     });
 
-    return searchEngine!.getSuggestions(query);
+    return searchEngine!.getSuggestions(query, { singleFilePath });
 }
 
 export async function reindex() {

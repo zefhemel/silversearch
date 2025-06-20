@@ -1,19 +1,21 @@
 <script lang="ts">
-    import type { ResultPage } from "../../shared/global";
-    import { highlightText } from "../util/highlighting";
+    import type { Snippet } from "svelte";
+    import type { MouseEventHandler } from "svelte/elements";
 
-    const { result, selected, onclick, onmousemove }: { result: ResultPage, selected: boolean, onclick: (e: MouseEvent) => void, onmousemove: (e: MouseEvent) => void } = $props();
+    const { title, description, info, selected, onclick, onmousemove }: { title?: Snippet, description: Snippet, info?: Snippet, selected: boolean, onclick: MouseEventHandler<HTMLDivElement>, onmousemove: MouseEventHandler<HTMLDivElement> } = $props();
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="sb-option" class:silversearch-selected={selected} onclick={onclick} onmousemove={onmousemove}>
-    <div class="sb-name">
-        <span class="silversearch-title">{@html highlightText(result.ref, result.matchesName)}</span>
-        <span class="silversearch-matches">{result.matches.length} Matches</span>
-    </div>
+    {#if title || info}
+        <div class="sb-name">
+            {#if title} <span class="silversearch-title">{@render title()}</span> {/if}
+            {#if info} <span class="silversearch-info">{@render info()}</span> {/if}
+        </div>
+    {/if}
     <div class="sb-description">
-        {@html highlightText(result.excerpts[0].excerpt, result.matches)}
+        {@render description()}
     </div>
 </div>
 
@@ -32,10 +34,10 @@
         align-items: baseline;
     }
 
-    .silversearch-matches {
+    .silversearch-info {
         font-size: 0.8rem;
         margin-left: 1ch;
-        color: var(--modal-description-color)
+        color: var(--modal-description-color);
     }
 
     .silversearch-title {
@@ -43,7 +45,6 @@
         overflow: hidden;
     }
 
-    /* For whatever reason svelte has problems with conditional styles*/
     :global(.silversearch-selected) {
         background-color: var(--editor-selection-background-color);
     }
