@@ -6,11 +6,16 @@ functions:
       name: "Silversearch: Search"
       key: Ctrl-s
       mac: Cmd-q
+  getVersion:
+    path: "./worker/silversearch.ts:showVersion"
+    command:
+      name: "Silversearch: Print Version"
   openSearch:
     path: "./worker/silversearch.ts:openSearch"
     syscall: "silversearch.openSearch"
   reindex:
     path: "./worker/silversearch.ts:reindex"
+    syscall: "silversearch.reindex"
     command:
       name: "Silversearch: Full Reindex"
   init:

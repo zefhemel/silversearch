@@ -1,6 +1,6 @@
 {
     "tasks": {
-        "build": "npm run build -- && deno run -A https://github.com/silverbulletmd/silverbullet/releases/download/edge/plug-compile.js --info -c deno.json silversearch.plug.yaml"
+        "build": "npm run build -- && deno run -A ./scripts/updateVersion.ts && deno check -c deno.json && deno run -A https://github.com/silverbulletmd/silverbullet/releases/download/edge/plug-compile.js --info -c deno.json silversearch.plug.yaml"
     },
     "imports": {
         "minisearch": "https://esm.sh/minisearch@7.1.2",

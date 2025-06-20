@@ -1,3 +1,0 @@
-- model.mode when rendering the model can't be zero
-- (maybe use something different than inset in px)
-- Remove border and background from modal in silverbullet
