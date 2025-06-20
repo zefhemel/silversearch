@@ -12,6 +12,7 @@
         event.stopPropagation();
         if (event.key !== "Tab") return;
 
+        // TODO: Don't allow switching when in document editor
         spaceModal = !spaceModal;
 
         event.preventDefault();

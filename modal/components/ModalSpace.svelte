@@ -111,12 +111,12 @@
         {/each}
 
         {#if !results.length && !searching && query}
-            <p class="silversearch-apology">Silversearch found 0 results for your query</p>
+            <span class="silversearch-apology">Silversearch found <code>0</code> results for your query</span>
         {:else if !results.length && !searching}
             <SearchTips/>
         {:else if !results.length && searching}
             <!-- TODO: Think about this a little more indepth, maybe we should give somekind of feedback when loading -->
-            <p class="silversearch-apology">Laoding...</p>
+            <span class="silversearch-apology">Searching...</span>
         {/if}
     {/snippet}
 </ModalContainer>

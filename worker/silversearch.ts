@@ -16,7 +16,6 @@ let searchEngine: SearchEngine | null = null;
 
 let indexQueue: string[] = [];
 
-// TODO: Handle multiple calls of this
 async function checkIfInitalized() {
     if (searchEngine) return;
 
