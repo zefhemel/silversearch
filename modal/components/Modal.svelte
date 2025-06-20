@@ -54,17 +54,27 @@
         syscall("editor.hidePanel", "modal");
     }
 
-    function openSelected(openInNewTab: boolean) {
+    async function openSelected(openInNewTab: boolean) {
         const result = results[selectedIndex];
         const offset = result.matches?.[0]?.offset ?? 0
 
-        syscall("editor.navigate", {
+        await syscall("editor.navigate", {
             kind: "page",
             page: result.ref,
             pos: offset,
         }, false, openInNewTab);
 
-        syscall("editor.hidePanel", "modal");
+        await syscall("editor.hidePanel", "modal");
+    }
+
+    async function insertLink() {
+        const result = results[selectedIndex];
+
+        const link = `[[${result.ref}]]`
+
+        await syscall("editor.insertAtCursor", link);
+
+        await syscall("editor.hidePanel", "modal");
     }
 
     function onKeyDown(e: KeyboardEvent) {
@@ -72,7 +82,8 @@
         if (e.key === "ArrowUp") selectedIndex--;
         else if (e.key === "ArrowDown") selectedIndex++;
         else if (e.key === "Enter") {
-            openSelected(e.ctrlKey);
+            if (e.altKey) insertLink();
+            else openSelected(e.ctrlKey);
         }
         else return;
 
