@@ -26,6 +26,41 @@ Due to some "bugs" in Silverbullet you have to set the following SpaceStyle to a
 }
 ```
 
+## Settings
+
+Silversearch can be configured using SpaceLua
+```lua
+config.set {
+  silversearch = {
+    -- Weighs specific fields more
+    weights = {
+      basename = 15
+      -- Also available: tags, aliases, directory, displayName, content
+    },
+    -- Weighs Pages with specific attributes set through frontmatter more if that attribute is included in the search
+    weightCustomProperties = {
+      books = 10
+    },
+    -- Files that have been edited more recently than, will be weighed more
+    recencyBoost = "",
+    -- Rank specific folders down
+    downrankedFoldersFilters = {"Library/"},
+    -- Normalize diatrics in queries and search terms. Words like "brûlée" or "žluťoučký" will be indexed as "brulee" and "zlutoucky".
+    ignoreDiacritics = true,
+    -- Similar to `ignoreDiacritics` but for arabic diatritics
+    ignoreArabicDiacritics = false,
+    -- Breaks urls down into searchable words
+    tokenizeUrls = true,
+    -- Breaks words seperated with camel case into searchable words
+    splitCamelCase = true,
+    -- Increases the fuzziness of the full-text search, options are "0", "1", "2"
+    fuzziness = "1",
+    -- Puts newlines into the excerpts as opposed to rendering it as one continous string
+    renderLineReturnInExcerpts = true
+  }
+}
+```
+
 ## LICENSE
 
 Silversearch is licensed under [GPL-3](https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)).
