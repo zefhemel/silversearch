@@ -44,11 +44,13 @@ export class SearchEngine {
     }
 
     public async fullReindex(): Promise<void> {
-        await editor.flashNotification("Silversearch: Fully reindexing, this can cause performance problems");
+        await editor.flashNotification("Silversearch - Fully reindexing, this can cause performance problems");
         this.minisearch.removeAll();
 
         // We only index pages right now
         const pages = await space.listPages();
+
+        console.log(`[Silversearch] Indexing ${pages.length} pages`);
 
         const cleanedPages: IndexableDocument[] = await Promise.all(pages.map(SearchEngine.pageMetaToIndexablePage));
 
@@ -56,7 +58,7 @@ export class SearchEngine {
 
         await this.writeToCache();
 
-        await editor.flashNotification("Silversearch: Full reindex done!");
+        await editor.flashNotification("Silversearch - Full reindex done!");
     }
 
     public async indexPage(pageRef: string): Promise<void> {
@@ -64,7 +66,8 @@ export class SearchEngine {
     }
 
     public async indexPages(pageRefs: string[]): Promise<void> {
-        for (const pageRef in pageRefs) {
+        for (const pageRef of pageRefs) {
+            console.log("[Silversearch] Indexing ", pageRef);
             const pageMeta = await space.getPageMeta(pageRef);
 
             const document = await SearchEngine.pageMetaToIndexablePage(pageMeta);

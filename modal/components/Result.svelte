@@ -9,7 +9,8 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="sb-option" class:silversearch-selected={selected} onclick={onclick} onmousemove={onmousemove}>
     <div class="sb-name">
-        {@html highlightText(result.ref, result.matchesName)}
+        <span class="silversearch-title">{@html highlightText(result.ref, result.matchesName)}</span>
+        <span class="silversearch-matches">{result.matches.length} Matches</span>
     </div>
     <div class="sb-description">
         {@html highlightText(result.excerpt, result.matches)}
@@ -22,6 +23,23 @@
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 3;
         line-clamp: 3;
+        overflow: hidden;
+    }
+
+    .sb-name {
+        display: flex;
+        white-space: nowrap;
+        align-items: baseline;
+    }
+
+    .silversearch-matches {
+        font-size: 0.8rem;
+        margin-left: 1ch;
+        color: var(--modal-description-color)
+    }
+
+    .silversearch-title {
+        text-overflow: ellipsis;
         overflow: hidden;
     }
 
