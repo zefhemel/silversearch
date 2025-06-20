@@ -3,7 +3,7 @@ export type SearchMatch = {
     offset: number;
 }
 
-export type ResultNote = {
+export type ResultPage = {
     score: number;
     ref: string;
     basename: string;
@@ -12,5 +12,10 @@ export type ResultNote = {
     matches: SearchMatch[];
 
     matchesName: SearchMatch[];
+    excerpts: ResultExcerpt[];
+}
+
+export type ResultExcerpt = {
+    offset: number;
     excerpt: string;
 }

@@ -1,3 +1,5 @@
+import { SearchMatch } from "../../shared/global.ts";
+import { excerptAfter } from "./global.ts";
 
 const japaneseDiacritics = ['\\u30FC', '\\u309A', '\\u3099'];
 const regexpExclude = japaneseDiacritics.join('|');
@@ -55,4 +57,29 @@ export function removeDiacritics(str: string, arabic = false): string {
     str = str.replaceAll('[__silversearch__backtick__]', '`');
     str = str.replaceAll('[__silversearch__caret__]', '^');
     return str;
+}
+
+export function getGroups(matches: SearchMatch[]): SearchMatch[][] {
+    const groups: SearchMatch[][] = [];
+    let lastOffset = -1;
+    let count = 0; // Avoid infinite loops
+    while (++count < 100) {
+        const group = getGroupedMatches(matches, lastOffset, excerptAfter);
+        if (!group.length) break;
+        lastOffset = group.at(-1)!.offset;
+        groups.push(group);
+    }
+    return groups;
+}
+
+function getGroupedMatches(
+    matches: SearchMatch[],
+    offsetFrom: number,
+    maxLen: number
+): SearchMatch[] {
+    const first = matches.find(m => m.offset > offsetFrom);
+    if (!first) return [];
+    return matches.filter(
+        m => m.offset > offsetFrom && m.offset <= first.offset + maxLen
+    );
 }

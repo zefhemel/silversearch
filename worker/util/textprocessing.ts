@@ -3,7 +3,7 @@ import { excerptAfter, excerptBefore } from "./global.ts";
 import { Query } from "./query.ts";
 import { getPlugConfig } from "./settings.ts";
 import { removeDiacritics } from "./utils.ts";
-import { SearchMatch } from "../../shared/global.ts";
+import { ResultExcerpt, SearchMatch } from "../../shared/global.ts";
 
 function escapeRegExp(string: string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -70,7 +70,7 @@ export async function getMatches(
     return matches;
 }
 
-export async function makeExcerpt(content: string, offset: number): Promise<string> {
+export async function makeExcerpt(content: string, offset: number): Promise<ResultExcerpt> {
     const settings = await getPlugConfig();
 
     try {
@@ -106,14 +106,13 @@ export async function makeExcerpt(content: string, offset: number): Promise<stri
             content = content.trim().replaceAll('\n', '<br>');
         }
 
-        return content;
+        return { excerpt: content, offset: offset };
     } catch (e) {
         await editor.flashNotification("Silversearch - Error while creating excerpt, see developer console", "error");
         console.error("[Silversearch] Error while creating excerpt", e);
-        return "";
+        return { excerpt: "", offset: 0 };
     }
 }
-
 
 export function escapeHTML(html: string): string {
     return html

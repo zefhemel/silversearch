@@ -1,8 +1,8 @@
 <script lang="ts">
-    import type { ResultNote } from "../../shared/global";
+    import type { ResultPage } from "../../shared/global";
     import { highlightText } from "../util/highlighting";
 
-    const { result, selected, onclick, onmousemove }: { result: ResultNote, selected: boolean, onclick: (e: MouseEvent) => void, onmousemove: (e: MouseEvent) => void } = $props();
+    const { result, selected, onclick, onmousemove }: { result: ResultPage, selected: boolean, onclick: (e: MouseEvent) => void, onmousemove: (e: MouseEvent) => void } = $props();
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -13,7 +13,7 @@
         <span class="silversearch-matches">{result.matches.length} Matches</span>
     </div>
     <div class="sb-description">
-        {@html highlightText(result.excerpt, result.matches)}
+        {@html highlightText(result.excerpts[0].excerpt, result.matches)}
     </div>
 </div>
 

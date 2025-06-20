@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { ResultNote } from "../../shared/global.ts";
+    import type { ResultPage } from "../../shared/global.ts";
     import { debounce } from "../util/debounce.ts";
     import Result from "./Result.svelte";
     import { tick } from "svelte";
@@ -10,7 +10,7 @@
 
     let query: string = $state(defaultQuery);
 
-    let results: ResultNote[] = $state([]);
+    let results: ResultPage[] = $state([]);
     let searching = $state(false);
 
     let selectedIndex: number = $state(0);
@@ -32,7 +32,7 @@
     const debounceUpdateResults = debounce(updateResults, 0)
 
     // svelte-ignore non_reactive_update
-    let waitPromise: PromiseWithResolvers<ResultNote[]> | null = null;
+    let waitPromise: PromiseWithResolvers<ResultPage[]> | null = null;
     async function updateResults() {
         searching = true;
 
@@ -44,7 +44,7 @@
         waitPromise = Promise.withResolvers();
 
         try {
-            results = await Promise.race([syscall("silversearch.search", query) as Promise<ResultNote[]>, waitPromise.promise]);
+            results = await Promise.race([syscall("silversearch.search", query) as Promise<ResultPage[]>, waitPromise.promise]);
             waitPromise = null;
             selectedIndex = 0;
             scrollIntoView();

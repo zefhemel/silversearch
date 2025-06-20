@@ -4,10 +4,10 @@ import { SearchResult, Options, default as MiniSearch } from "minisearch"
 import { Query } from "./query.ts";
 import { getPlugConfig, SilversearchSettings } from "./settings.ts";
 import { tokenizeForIndexing, tokenizeForSearch } from "./tokenizer.ts";
-import { removeDiacritics, stripMarkdownCharacters } from "./utils.ts";
+import { getGroups, removeDiacritics, stripMarkdownCharacters } from "./utils.ts";
 import { CompletePage, IndexableDocument, RecencyCutoff } from "./global.ts";
 import { getMatches, makeExcerpt } from "./textprocessing.ts";
-import { ResultNote } from "../../shared/global.ts";
+import { ResultExcerpt, ResultPage } from "../../shared/global.ts";
 
 export class SearchEngine {
     private minisearch: MiniSearch;
@@ -262,7 +262,7 @@ export class SearchEngine {
     public async getSuggestions(
         query: Query,
         options?: Partial<{ singleFilePath?: string }>
-    ): Promise<ResultNote[]> {
+    ): Promise<ResultPage[]> {
         const results = await this.search(query, {
             prefixLength: 1,
             singleFilePath: options?.singleFilePath,
@@ -306,17 +306,38 @@ export class SearchEngine {
                 foundWords
             );
 
-            const excerpt = await makeExcerpt(
-                note.content,
-                matches[0]?.offset ?? -1
-            )
+            let excerpts: ResultExcerpt[];
 
-            const resultNote: ResultNote = {
+            if (options?.singleFilePath) {
+                let groups = getGroups(matches);
+
+                // If there are quotes in the search,
+                // only show results that match at least one of the quotes
+                const exactTerms = query.getExactTerms()
+                if (exactTerms.length) {
+                    groups = groups.filter(group =>
+                        exactTerms.every(exact =>
+                            group.some(match => match.match.includes(exact))
+                        )
+                    )
+                }
+
+                const groupedOffsets = groups.map(group => Math.round(group.at(0)!.offset));
+
+                excerpts = await Promise.all(groupedOffsets.map(offset => makeExcerpt(note?.content ?? "", offset)));
+            } else {
+                excerpts = [await makeExcerpt(
+                    note.content,
+                    matches[0]?.offset ?? -1
+                )];
+            }
+
+            const resultNote: ResultPage = {
                 score: result.score,
                 foundWords,
                 matches,
                 matchesName,
-                excerpt,
+                excerpts,
                 ...note,
             };
             return resultNote;
@@ -324,6 +345,70 @@ export class SearchEngine {
 
         return resultNotes.filter(result => result !== null);
     }
+
+    // public async getFileSuggestions(
+    //     query: Query,
+    //     filePath: string,
+    // ): Promise<ResultPage[]> {
+    //     const results = await this.search(query, {
+    //         prefixLength: 1,
+    //         singleFilePath: filePath,
+    //     });
+
+    //     if (!results.length) return [];
+
+    //     const result = results[0];
+
+    //     const document = await this.getCompletePage(result.id);
+
+    //     if (!document) {
+    //         console.warn(`Silversearch - Note "${result.id}" disappeared. Skipping`);
+    //         return [];
+    //     }
+
+    //     // Clean search matches that match quoted expressions,
+    //     // and inject those expressions instead
+    //     const foundWords = [
+    //         // Matching terms from the result,
+    //         // do not necessarily match the query
+    //         ...result.terms,
+
+    //         // Quoted expressions
+    //         ...query.getExactTerms(),
+
+    //         // Tags, starting with #
+    //         ...query.getTags(),
+    //     ]
+
+    //     const matches = await getMatches(
+    //         note.content,
+    //         foundWords,
+    //         query
+    //     );
+
+    //     // Generating these here is a little performance heavy but safes us from having a lot of doubled code in the frontend
+    //     const matchesName = await getMatches(
+    //         note.ref,
+    //         foundWords
+    //     );
+
+    //     const excerpt = await makeExcerpt(
+    //         note.content,
+    //         matches[0]?.offset ?? -1
+    //     )
+
+    //     const resultNote: ResultPage = {
+    //         score: result.score,
+    //         foundWords,
+    //         matches,
+    //         matchesName,
+    //         excerpt,
+    //         ...note,
+    //     };
+    //     return resultNote;
+
+    //     return resultNotes.filter(result => result !== null);
+    // }
 
     private async getCompletePage(ref: string): Promise<CompletePage> {
         let meta: PageMeta;
@@ -374,7 +459,7 @@ export class SearchEngine {
             processTerm: (term: string) => (settings.ignoreDiacritics
                 ? removeDiacritics(term, settings.ignoreArabicDiacritics)
                 : term
-                ).toLowerCase(),
+            ).toLowerCase(),
             idField: "ref",
             fields: [
                 "content",

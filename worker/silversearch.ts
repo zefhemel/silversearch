@@ -7,8 +7,7 @@ import html from "../dist/modal.html.ts"
 import { SearchEngine } from "./util/searchengine.ts";
 import { Query } from "./util/query.ts";
 import { getPlugConfig } from "./util/settings.ts";
-import { ResultNote } from "../shared/global.ts";
-import { DEFAULT_CIPHERS } from "node:tls";
+import { ResultPage } from "../shared/global.ts";
 
 // So this will be a global variable in a service worker, so the lifetime is kind of uncertain, especially if
 // we don't have direct access to events, i.e. we can't trust that this exists AT ALL
@@ -59,7 +58,7 @@ export async function index({ name }: IndexTreeEvent) {
     else await searchEngine.indexPage(name);
 }
 
-export async function search(searchTerm: string): Promise<ResultNote[]> {
+export async function search(searchTerm: string): Promise<ResultPage[]> {
     await checkIfInitalized();
 
     const settings = await getPlugConfig();
