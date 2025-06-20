@@ -15,6 +15,17 @@ config.set {
 }
 ```
 
+Due to some "bugs" in Silverbullet you have to set the following SpaceStyle to achieve the proper UI experience.
+```css
+.sb-panel iframe {
+  background: transparent;
+}
+.sb-modal {
+  border: none;
+  background-color: transparent;
+}
+```
+
 ## LICENSE
 
 Silversearch is licensed under [GPL-3](https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)).
