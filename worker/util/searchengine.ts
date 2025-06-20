@@ -109,6 +109,7 @@ export class SearchEngine {
                 displayName: settings.weightBasename,
                 directory: settings.weightDirectory,
                 tags: settings.weightTags,
+                unmarkedTags: settings.weightTags
             },
             tokenize: text => [text],
             boostDocument(_id, _term, storedFields) {
@@ -338,9 +339,12 @@ export class SearchEngine {
 
         const result = await SearchEngine.pageMetaToIndexablePage(meta);
 
+        const metadata = Object.fromEntries(Object.entries(meta).filter(([key, _]) => !["ref", "tag", "tags", "itags", "name", "created", "lastModified", "perm", "lastOpened", "pageDecoration", "aliases"].includes(key)));
+
         const completePage = {
             ...result,
-            cleanedContent: stripMarkdownCharacters(removeDiacritics(result.content))
+            cleanedContent: stripMarkdownCharacters(removeDiacritics(result.content)),
+            metadata
         }
 
         this.documentCache.set(ref, completePage);
@@ -351,18 +355,16 @@ export class SearchEngine {
     private static async pageMetaToIndexablePage(page: PageMeta): Promise<IndexableDocument> {
         const content = await space.readPage(page.ref);
 
-        const metadata = Object.fromEntries(Object.entries(page).filter(([key, _]) => !["ref", "tag", "tags", "itags", "name", "created", "lastModified", "perm", "lastOpened", "pageDecoration", "aliases"].includes(key)));
-
         return {
             ref: page.name,
             basename: page.name.split("/").pop() ?? page.name,
             directory: page.name.split("/").splice(-1).join() ?? "",
             aliases: page.aliases ?? [],
             displayName: page.displayName ?? "",
-            tags: page.tags ?? [],
+            tags: page.tags?.map((tag) => "#" + tag) ?? [],
+            unmarkedTags: page.tags ?? [],
             content: content,
             lastModified: parseInt(page.lastModified),
-            metadata,
         }
     }
 
