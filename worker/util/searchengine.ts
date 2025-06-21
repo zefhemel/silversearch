@@ -403,11 +403,11 @@ export class SearchEngine {
                 "basename",
                 "directory",
                 "aliases",
-                "displayName",
-                // "tags"
+                "displayName"
             ],
             storeFields: [
-                "lastModified"
+                "lastModified",
+                "tags"
             ]
         }
     }
