@@ -5,7 +5,7 @@ functions:
     command:
       name: "Silversearch: Search"
       key: Ctrl-s
-      mac: Cmd-q
+      mac: Cmd-s
   getVersion:
     path: "./worker/silversearch.ts:showVersion"
     command:
