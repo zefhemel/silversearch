@@ -6,7 +6,7 @@
     import SearchTips from "./SearchTips.svelte";
     import { tick } from "svelte";
 
-    let { query = $bindable() }: { query: string } = $props();
+    let { query = $bindable(), isDocumentEditor }: { query: string, isDocumentEditor: boolean } = $props();
 
     let results: ResultPage[] = $state([]);
     let searching = $state(false);
@@ -101,7 +101,7 @@
 
 <ModalContainer onkeydown={onKeyDown} bind:query>
     {#snippet helpText()}
-        Press <code>Enter</code> to open the selected page, press <code>Ctrl-Enter</code> to open the page in a new Tab and press <code>Alt-Enter</code> to insert a link at the cursor. Use <code>Tab</code> to only search this page.
+        Press <code>Enter</code> to open the selected page, press <code>Ctrl-Enter</code> to open the page in a new Tab and press <code>Alt-Enter</code> to insert a link at the cursor. {#if !isDocumentEditor}Use <code>Tab</code> to only search this page.{/if}
     {/snippet}
 
     {#snippet resultList()}

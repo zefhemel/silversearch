@@ -2,7 +2,7 @@
     import ModalFile from "./ModalFile.svelte";
     import ModalSpace from "./ModalSpace.svelte";
 
-    const { defaultQuery, currentPage }: { defaultQuery: string, currentPage: string } = $props();
+    const { defaultQuery, currentPage, isDocumentEditor }: { defaultQuery: string, currentPage: string, isDocumentEditor: boolean } = $props();
 
     let query = $state(defaultQuery);
 
@@ -12,7 +12,8 @@
         event.stopPropagation();
         if (event.key !== "Tab") return;
 
-        // TODO: Don't allow switching when in document editor
+        if (isDocumentEditor) return;
+
         spaceModal = !spaceModal;
 
         event.preventDefault();
@@ -23,7 +24,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div onkeydown={onKeyDown}>
     {#if spaceModal}
-        <ModalSpace bind:query />
+        <ModalSpace bind:query isDocumentEditor={isDocumentEditor}/>
     {:else}
         <ModalFile bind:query currentPage={currentPage}/>
     {/if}

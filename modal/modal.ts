@@ -3,7 +3,8 @@ import { mount } from "svelte"
 import Modal from "./components/Modal.svelte"
 
 async function mountModal() {
-    const page = syscall("editor.getCurrentPage");
+    const page: Promise<string> = syscall("editor.getCurrentPage");
+    const isDocumentEditor: Promise<string> = syscall("editor.getCurrentEditor");
 
     await Promise.race([
         new Promise((resolve) => setTimeout(resolve, 75)),
@@ -22,6 +23,7 @@ async function mountModal() {
         props: {
             defaultQuery: globalThis.DEFAULT_QUERY ?? "",
             currentPage: await page,
+            isDocumentEditor: (await isDocumentEditor) !== "page",
         }
     });
 }
