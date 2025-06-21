@@ -2,10 +2,10 @@ export const excerptBefore = 100;
 export const excerptAfter = 300;
 
 export enum RecencyCutoff {
-    Disabled = '0',
-    Day = '1',
-    Week = '2',
-    Month = '3',
+    Disabled = "disabled",
+    Day = "day",
+    Week = "week",
+    Month = "month",
 }
 
 export const SEPARATORS =

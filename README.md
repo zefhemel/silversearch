@@ -30,8 +30,8 @@ config.set {
     weightCustomProperties = {
       books = 10
     },
-    -- Files that have been edited more recently than, will be weighed more
-    recencyBoost = "",
+    -- Files that have been edited more recently than, will be weighed more. Options are "day", "week", "month" or "disabled"
+    recencyBoost = "week",
     -- Rank specific folders down
     downrankedFoldersFilters = {"Library/"},
     -- Normalize diatrics in queries and search terms. Words like "brûlée" or "žluťoučký" will be indexed as "brulee" and "zlutoucky".

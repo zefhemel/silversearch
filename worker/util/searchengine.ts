@@ -117,8 +117,8 @@ export class SearchEngine {
                     return 1;
                 }
                 const lastModified = storedFields?.lastModified as number;
-                const now = new Date().valueOf();
-                const daysElapsed = (now - lastModified) / (24 * 3600);
+                const now = new Date().getTime();
+                const daysElapsed = (now - lastModified) / (24 * 3600 * 1000);
 
                 // Documents boost
                 const cutoff = {
@@ -420,7 +420,7 @@ export class SearchEngine {
         }
 
         const cached = this.documentCache.get(ref);
-        if (cached && parseInt(meta.lastModified) === cached.lastModified) return cached;
+        if (cached && new Date(meta.lastModified).getTime() === cached.lastModified) return cached;
 
         const result = await SearchEngine.pageMetaToIndexablePage(meta);
 
@@ -440,6 +440,7 @@ export class SearchEngine {
     private static async pageMetaToIndexablePage(page: PageMeta): Promise<IndexableDocument> {
         const content = await space.readPage(page.ref);
 
+
         return {
             ref: page.name,
             basename: page.name.split("/").pop() ?? page.name,
@@ -449,7 +450,7 @@ export class SearchEngine {
             tags: page.tags?.map((tag) => "#" + tag) ?? [],
             unmarkedTags: page.tags ?? [],
             content: content,
-            lastModified: parseInt(page.lastModified),
+            lastModified: new Date(page.lastModified).getTime(),
         }
     }
 
@@ -468,8 +469,10 @@ export class SearchEngine {
                 "aliases",
                 "displayName",
                 // "tags"
+            ],
+            storeFields: [
+                "lastModified"
             ]
-            // storeFields: ['tags', 'mtime'],
         }
     }
 }
