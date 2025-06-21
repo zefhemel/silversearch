@@ -115,7 +115,6 @@
         {:else if !results.length && !searching}
             <SearchTips/>
         {:else if !results.length && searching}
-            <!-- TODO: Think about this a little more indepth, maybe we should give somekind of feedback when loading -->
             <div class="silversearch-apology">Searching...</div>
         {/if}
     {/snippet}
