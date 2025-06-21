@@ -6,7 +6,7 @@ import html from "../dist/modal.html.ts"
 
 import { SearchEngine } from "./util/searchengine.ts";
 import { Query } from "./util/query.ts";
-import { getPlugConfig } from "./util/settings.ts";
+import { getCustomStyles, getPlugConfig } from "./util/settings.ts";
 import { ResultPage } from "../shared/global.ts";
 import { publicVersion } from "../dist/public_verion.ts";
 
@@ -34,11 +34,13 @@ async function checkIfInitalized() {
 }
 
 export async function openSearch(defaultQuery: string  = ""): Promise<void> {
+    const styles = await getCustomStyles();
+
     await editor.showPanel(
         "modal",
         // We can't have a falsy value (0) here, because of some silverbullet oddities
         1,
-        html,
+        styles ? `<style>${styles}</style>` + html : html,
         defaultQuery ? `globalThis.DEFAULT_QUERY = "${defaultQuery}";` + script : script,
     );
 }

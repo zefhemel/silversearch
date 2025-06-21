@@ -26,9 +26,4 @@ async function mountModal() {
     });
 }
 
-// TODO
-// Be careful with the timings here
-// See Treeview Plug for reference
-// const customStyles = await getCustomStyles();
-
 mountModal();
