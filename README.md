@@ -6,23 +6,12 @@ This is a full-text searching plug for [Silverbullet](https://silverbullet.md/).
 
 ## Installation
 
-The plug is installed like any other plug using SpaceLua. Just add the following into a SpaceLua block somethere in your Space.
+The plug is installed like any other plug using SpaceLua, just add the following into a SpaceLua block somewhere in your Space.
 ```lua
 config.set {
   plugs = {
     "ghr:MrMugame/silversearch"
   }
-}
-```
-
-Due to some "bugs" in Silverbullet you have to set the following SpaceStyle to achieve the proper UI experience.
-```css
-.sb-panel iframe {
-  background: transparent;
-}
-.sb-modal {
-  border: none;
-  background-color: transparent;
 }
 ```
 
