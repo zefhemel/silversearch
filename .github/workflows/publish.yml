@@ -26,6 +26,12 @@ jobs:
       - name: Build step
         run: "deno task build"
 
+      - name: Update release tag
+        uses: rickstaa/action-create-tag@v1
+        with:
+          tag: "edge"
+          force_push_tag: true
+
       - name: Release
         uses: softprops/action-gh-release@v2
         env:
