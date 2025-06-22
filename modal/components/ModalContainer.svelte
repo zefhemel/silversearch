@@ -2,7 +2,17 @@
     import type { Snippet } from "svelte";
     import type { KeyboardEventHandler } from "svelte/elements";
 
-    let { onkeydown, query = $bindable(), helpText, resultList }: { onkeydown: KeyboardEventHandler<HTMLDivElement>, query: string, helpText: Snippet, resultList: Snippet } = $props();
+    let {
+        onkeydown,
+        query = $bindable(),
+        helpText,
+        resultList,
+    }: {
+        onkeydown: KeyboardEventHandler<HTMLDivElement>;
+        query: string;
+        helpText: Snippet;
+        resultList: Snippet;
+    } = $props();
 
     let dialog: HTMLDialogElement;
 
@@ -31,11 +41,15 @@
     <div
         class="sb-header"
         onclick={(e: Event) => e.stopPropagation()}
-        onkeydown={onkeydown}
+        {onkeydown}
     >
         <label for="mini-editor">Search</label>
         <div class="sb-mini-editor">
-            <input id="mini-editor" placeholder="Search with Silversearch" bind:value={query}/>
+            <input
+                id="mini-editor"
+                placeholder="Search with Silversearch"
+                bind:value={query}
+            />
         </div>
     </div>
     <div class="sb-help-text">{@render helpText()}</div>
@@ -50,7 +64,7 @@
     }
 
     #mini-editor {
-	    caret-color: var(--editor-caret-color);
+        caret-color: var(--editor-caret-color);
         outline: none;
         border: none;
         padding: 2px 0 0 3px;

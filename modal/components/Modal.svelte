@@ -2,7 +2,15 @@
     import ModalFile from "./ModalFile.svelte";
     import ModalSpace from "./ModalSpace.svelte";
 
-    const { defaultQuery, currentPage, isDocumentEditor }: { defaultQuery: string, currentPage: string, isDocumentEditor: boolean } = $props();
+    const {
+        defaultQuery,
+        currentPage,
+        isDocumentEditor,
+    }: {
+        defaultQuery: string;
+        currentPage: string;
+        isDocumentEditor: boolean;
+    } = $props();
 
     let query = $state(defaultQuery);
 
@@ -20,12 +28,11 @@
     }
 </script>
 
-
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div onkeydown={onKeyDown}>
     {#if spaceModal}
-        <ModalSpace bind:query isDocumentEditor={isDocumentEditor}/>
+        <ModalSpace bind:query {isDocumentEditor} />
     {:else}
-        <ModalFile bind:query currentPage={currentPage}/>
+        <ModalFile bind:query {currentPage} />
     {/if}
 </div>

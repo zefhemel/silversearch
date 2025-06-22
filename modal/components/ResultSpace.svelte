@@ -1,12 +1,22 @@
 <script lang="ts">
     import type { ResultPage } from "../../shared/global";
     import { highlightText } from "../util/highlighting";
-    import ResultContainer from "./ResultContainer.svelte"
+    import ResultContainer from "./ResultContainer.svelte";
 
-    const { result, selected, onclick, onmousemove }: { result: ResultPage, selected: boolean, onclick: (e: MouseEvent) => void, onmousemove: (e: MouseEvent) => void } = $props();
+    const {
+        result,
+        selected,
+        onclick,
+        onmousemove,
+    }: {
+        result: ResultPage;
+        selected: boolean;
+        onclick: (e: MouseEvent) => void;
+        onmousemove: (e: MouseEvent) => void;
+    } = $props();
 </script>
 
-<ResultContainer onmousemove={onmousemove} onclick={onclick} selected={selected}>
+<ResultContainer {onmousemove} {onclick} {selected}>
     {#snippet title()}
         {@html highlightText(result.ref, result.matchesName)}
     {/snippet}

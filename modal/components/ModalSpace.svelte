@@ -6,7 +6,10 @@
     import SearchTips from "./SearchTips.svelte";
     import { tick } from "svelte";
 
-    let { query = $bindable(), isDocumentEditor }: { query: string, isDocumentEditor: boolean } = $props();
+    let {
+        query = $bindable(),
+        isDocumentEditor,
+    }: { query: string; isDocumentEditor: boolean } = $props();
 
     let results: ResultPage[] = $state([]);
     let searching = $state(false);
@@ -22,7 +25,7 @@
         }
     });
 
-    const debounceUpdateResults = debounce(updateResults, 0)
+    const debounceUpdateResults = debounce(updateResults, 0);
 
     // svelte-ignore non_reactive_update
     let waitPromise: PromiseWithResolvers<ResultPage[]> | null = null;
@@ -37,7 +40,10 @@
         waitPromise = Promise.withResolvers();
 
         try {
-            results = await Promise.race([syscall("silversearch.search", query) as Promise<ResultPage[]>, waitPromise.promise]);
+            results = await Promise.race([
+                syscall("silversearch.search", query) as Promise<ResultPage[]>,
+                waitPromise.promise,
+            ]);
             waitPromise = null;
             selectedIndex = 0;
             scrollIntoView();
@@ -47,13 +53,18 @@
 
     async function openSelected(openInNewTab: boolean) {
         const result = results[selectedIndex];
-        const offset = result.matches?.[0]?.offset ?? 0
+        const offset = result.matches?.[0]?.offset ?? 0;
 
-        await syscall("editor.navigate", {
-            kind: "page",
-            page: result.ref,
-            pos: offset,
-        }, false, openInNewTab);
+        await syscall(
+            "editor.navigate",
+            {
+                kind: "page",
+                page: result.ref,
+                pos: offset,
+            },
+            false,
+            openInNewTab,
+        );
 
         await syscall("editor.hidePanel", "modal");
     }
@@ -61,7 +72,7 @@
     async function insertLink() {
         const result = results[selectedIndex];
 
-        const link = `[[${result.ref}]]`
+        const link = `[[${result.ref}]]`;
 
         await syscall("editor.insertAtCursor", link);
 
@@ -75,12 +86,14 @@
         else if (e.key === "Enter") {
             if (e.altKey) insertLink();
             else openSelected(e.ctrlKey);
-        }
-        else return;
+        } else return;
 
         e.preventDefault();
 
-        selectedIndex = Math.max(0, Math.min(results.length - 1, selectedIndex));
+        selectedIndex = Math.max(
+            0,
+            Math.min(results.length - 1, selectedIndex),
+        );
 
         scrollIntoView();
     }
@@ -98,22 +111,32 @@
     }
 </script>
 
-
 <ModalContainer onkeydown={onKeyDown} bind:query>
     {#snippet helpText()}
-        Press <code>Enter</code> to open the selected page, press <code>Ctrl-Enter</code> to open the page in a new Tab and press <code>Alt-Enter</code> to insert a link at the cursor. {#if !isDocumentEditor}Use <code>Tab</code> to only search this page.{/if}
+        Press <code>Enter</code> to open the selected page, press
+        <code>Ctrl-Enter</code>
+        to open the page in a new Tab and press <code>Alt-Enter</code> to insert
+        a link at the cursor. {#if !isDocumentEditor}Use <code>Tab</code> to only
+            search this page.{/if}
     {/snippet}
 
     {#snippet resultList()}
         {#each results as result, i}
             {@const isSelected = i === selectedIndex}
-            <ResultSpace result={result} selected={isSelected} onclick={({ctrlKey}) => openSelected(ctrlKey)} onmousemove={() => selectedIndex = i}></ResultSpace>
+            <ResultSpace
+                {result}
+                selected={isSelected}
+                onclick={({ ctrlKey }) => openSelected(ctrlKey)}
+                onmousemove={() => (selectedIndex = i)}
+            ></ResultSpace>
         {/each}
 
         {#if !results.length && !searching && query}
-            <div class="silversearch-apology">Silversearch found <code>0</code> results for your query</div>
+            <div class="silversearch-apology">
+                Silversearch found <code>0</code> results for your query
+            </div>
         {:else if !results.length && !searching}
-            <SearchTips/>
+            <SearchTips />
         {:else if !results.length && searching}
             <div class="silversearch-apology">Searching...</div>
         {/if}
