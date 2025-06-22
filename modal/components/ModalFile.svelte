@@ -4,9 +4,12 @@
     import { debounce } from "../util/debounce";
     import ModalContainer from "./ModalContainer.svelte";
     import SearchTips from "./SearchTips.svelte";
-    import ResultFile from "./ResultFile.svelte"
+    import ResultFile from "./ResultFile.svelte";
 
-    let { query = $bindable(), currentPage }: { query: string, currentPage: string } = $props();
+    let {
+        query = $bindable(),
+        currentPage,
+    }: { query: string; currentPage: string } = $props();
 
     let result: ResultPage | null = $state(null);
     let searching = $state(false);
@@ -22,7 +25,7 @@
         }
     });
 
-    const debounceUpdateResults = debounce(updateResults, 0)
+    const debounceUpdateResults = debounce(updateResults, 0);
 
     // svelte-ignore non_reactive_update
     let waitPromise: PromiseWithResolvers<ResultPage[]> | null = null;
@@ -37,7 +40,16 @@
         waitPromise = Promise.withResolvers();
 
         try {
-            result = (await Promise.race([syscall("silversearch.search", query, currentPage) as Promise<ResultPage[]>, waitPromise.promise]))[0];
+            result = (
+                await Promise.race([
+                    syscall(
+                        "silversearch.search",
+                        query,
+                        currentPage,
+                    ) as Promise<ResultPage[]>,
+                    waitPromise.promise,
+                ])
+            )[0];
             waitPromise = null;
             selectedIndex = 0;
             scrollIntoView();
@@ -49,11 +61,16 @@
         if (!result) return;
         const offset = result.excerpts[selectedIndex].offset;
 
-        await syscall("editor.navigate", {
-            kind: "page",
-            page: result.ref,
-            pos: offset,
-        }, false, openInNewTab);
+        await syscall(
+            "editor.navigate",
+            {
+                kind: "page",
+                page: result.ref,
+                pos: offset,
+            },
+            false,
+            openInNewTab,
+        );
 
         await syscall("editor.hidePanel", "modal");
     }
@@ -67,7 +84,10 @@
 
         e.preventDefault();
 
-        selectedIndex = Math.max(0, Math.min((result?.excerpts.length ?? 0) - 1, selectedIndex));
+        selectedIndex = Math.max(
+            0,
+            Math.min((result?.excerpts.length ?? 0) - 1, selectedIndex),
+        );
 
         scrollIntoView();
     }
@@ -85,22 +105,31 @@
     }
 </script>
 
-
 <ModalContainer onkeydown={onKeyDown} bind:query>
     {#snippet helpText()}
-        Press <code>Enter</code> to open the selected page, press <code>Ctrl-Enter</code> to open the page in a new Tab. Use <code>Tab</code> to search your space.
+        Press <code>Enter</code> to open the selected page, press
+        <code>Ctrl-Enter</code>
+        to open the page in a new Tab. Use <code>Tab</code> to search your space.
     {/snippet}
 
     {#snippet resultList()}
         {#each result?.excerpts ?? [] as excerpt, i}
             {@const isSelected = i === selectedIndex}
-            <ResultFile excerpt={excerpt} matches={result?.matches ?? []} selected={isSelected} onclick={({ctrlKey}) => openSelected(ctrlKey)} onmousemove={() => selectedIndex = i}></ResultFile>
+            <ResultFile
+                {excerpt}
+                matches={result?.matches ?? []}
+                selected={isSelected}
+                onclick={({ ctrlKey }) => openSelected(ctrlKey)}
+                onmousemove={() => (selectedIndex = i)}
+            ></ResultFile>
         {/each}
 
         {#if !result && !searching && query}
-            <div class="silversearch-apology">Silversearch found <code>0</code> results for your query</div>
+            <div class="silversearch-apology">
+                Silversearch found <code>0</code> results for your query
+            </div>
         {:else if !result && !searching}
-            <SearchTips/>
+            <SearchTips />
         {:else if !result && searching}
             <div class="silversearch-apology">Searching...</div>
         {/if}
