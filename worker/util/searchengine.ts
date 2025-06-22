@@ -207,7 +207,7 @@ export class SearchEngine {
             const metadata = documents.find((d) => d.ref === path)?.metadata;
             if (metadata) {
                 // Boost custom properties
-                for (const { name, weight } of settings.weightCustomProperties) {
+                for (const [name, weight] of Object.entries(settings.weightCustomProperties)) {
                     // Get frontmatter property
                     const values = metadata[name];
                     if (values && result.terms.some(t => values.includes(t))) {

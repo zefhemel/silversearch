@@ -16,7 +16,7 @@ const weightSchema = z.strictObject({
 
 const settingsSchema = z.strictObject({
     weights: z.optional(weightSchema).default(weightSchema.parse({})),
-    weightCustomProperties: z.optional(z.array(z.strictObject({name: z.string(), weight: z.number()}))).default([]),
+    weightCustomProperties: z.optional(z.record(z.string(), z.number())).default({}),
     recencyBoost: z.optional(z.enum(RecencyCutoff)).default(RecencyCutoff.Disabled),
     downrankedFoldersFilters: z.optional(z.array(z.string())).default([]),
     ignoreDiacritics: z.optional(z.boolean()).default(true),
