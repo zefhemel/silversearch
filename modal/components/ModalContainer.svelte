@@ -50,7 +50,7 @@
     }
 
     #mini-editor {
-	    caret-color: white;
+	    caret-color: var(--editor-caret-color);
         outline: none;
         border: none;
         padding: 2px 0 0 3px;
