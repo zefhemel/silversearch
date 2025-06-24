@@ -1,6 +1,6 @@
 import { splitCamelCase, splitHyphens } from "./utils.ts";
-import markdownLinkExtractor from "markdown-link-extractor"
 import { QueryCombination } from "minisearch";
+import { extractMdLinks } from "md-link-extractor";
 import { BRACKETS_AND_SPACE, SPACE_OR_PUNCTUATION } from "./global.ts";
 
 export function tokenizeForIndexing(text: string, options: { tokenizeUrls: boolean }): string[] {
@@ -9,7 +9,9 @@ export function tokenizeForIndexing(text: string, options: { tokenizeUrls: boole
         let urls: string[] = [];
         if (options.tokenizeUrls) {
             try {
-                urls = markdownLinkExtractor(text);
+                // Would love to use silverbullet here, but we can't introduce async here
+                // deno-lint-ignore no-explicit-any
+                urls = extractMdLinks(text).map((link: any) => link.href);
             } catch (e) {
                 console.log("[Silversearch] Error extracting urls", e);
             }
@@ -39,7 +41,8 @@ export function tokenizeForIndexing(text: string, options: { tokenizeUrls: boole
 
 export function tokenizeForSearch(text: string): QueryCombination {
     // Extract urls and remove them from the query
-    const urls: string[] = markdownLinkExtractor(text);
+    // deno-lint-ignore no-explicit-any
+    const urls: string[] = extractMdLinks(text).map((link: any) => link.href);
     text = urls.reduce((acc, url) => acc.replace(url, ''), text);
 
     const tokens = [...tokenizeTokens(text), ...urls].filter(Boolean);
