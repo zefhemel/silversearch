@@ -3,8 +3,8 @@
         "build": "npm run build -- && deno run -A ./scripts/updateVersion.ts && deno check -c deno.json && deno run -A https://github.com/silverbulletmd/silverbullet/releases/download/edge/plug-compile.js --info -c deno.json silversearch.plug.yaml"
     },
     "imports": {
-        "minisearch": "https://esm.sh/minisearch@7.1.2",
-        "search-query-parser": "https://esm.sh/search-query-parser@1.6.0",
+        "minisearch": "npm:minisearch@7.1.2",
+        "search-query-parser": "npm:search-query-parser@1.6.0",
         "zod": "npm:zod@3.25.67/v4",
         "markdown-link-extractor": "npm:markdown-link-extractor@4.0.2",
         "@silverbulletmd/silverbullet/syscalls": "jsr:@silverbulletmd/silverbullet@^2.0.0-pre/syscalls",
