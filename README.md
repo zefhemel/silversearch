@@ -26,7 +26,7 @@ config.set {
       basename = 15
       -- Also available: tags, aliases, directory, displayName, content
     },
-    -- Weighs Pages with specific attributes set through frontmatter more if that attribute is included in the search
+    -- Weighs pages with specific attributes set through frontmatter more if that attribute is included in the search
     weightCustomProperties = {
       books = 10
     },
