@@ -5,6 +5,7 @@
     import ModalContainer from "./ModalContainer.svelte";
     import SearchTips from "./SearchTips.svelte";
     import ResultFile from "./ResultFile.svelte";
+    import ResultApology from "./ResultApology.svelte";
 
     let {
         query = $bindable(),
@@ -125,13 +126,11 @@
         {/each}
 
         {#if !result && !searching && query}
-            <div class="silversearch-apology">
-                Silversearch found <code>0</code> results for your query
-            </div>
+            <ResultApology type="no-results"/>
         {:else if !result && !searching}
             <SearchTips />
         {:else if !result && searching}
-            <div class="silversearch-apology">Searching...</div>
+            <ResultApology type="searching"/>
         {/if}
     {/snippet}
 </ModalContainer>

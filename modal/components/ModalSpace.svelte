@@ -4,6 +4,7 @@
     import ModalContainer from "./ModalContainer.svelte";
     import ResultSpace from "./ResultSpace.svelte";
     import SearchTips from "./SearchTips.svelte";
+    import ResultApology from "./ResultApology.svelte";
     import { tick } from "svelte";
 
     let {
@@ -132,13 +133,11 @@
         {/each}
 
         {#if !results.length && !searching && query}
-            <div class="silversearch-apology">
-                Silversearch found <code>0</code> results for your query
-            </div>
+            <ResultApology type="no-results"/>
         {:else if !results.length && !searching}
             <SearchTips />
         {:else if !results.length && searching}
-            <div class="silversearch-apology">Searching...</div>
+            <ResultApology type="searching"/>
         {/if}
     {/snippet}
 </ModalContainer>
