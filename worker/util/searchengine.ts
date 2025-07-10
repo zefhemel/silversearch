@@ -126,7 +126,7 @@ export class SearchEngine {
                     [RecencyCutoff.Week]: -0.3,
                     [RecencyCutoff.Month]: -0.1,
                 } as const;
-                return 1 + Math.exp(cutoff[settings.recencyBoost] * daysElapsed);
+                return 1 + Math.exp(cutoff[settings.recencyBoost] * (daysElapsed / 1000));
             }
         });
 
