@@ -184,9 +184,9 @@ export class SearchEngine {
         }
 
         // TODO: This could be heavy on performance. We should also use a map here
-        const documents = (await Promise.allSettled(
+        const documents = (await Promise.all(
             results.map(async result => await this.getCompletePage(result.id))
-        )).filter((doc) => doc.status === "fulfilled").map((doc) => doc.value);
+        )).filter((doc) => !!doc);
 
         // Extract tags from the query
         const tags = query.getTags();
@@ -284,9 +284,9 @@ export class SearchEngine {
             singleFilePath: options?.singleFilePath,
         });
 
-        const documents = (await Promise.allSettled(
+        const documents = (await Promise.all(
             results.map(async result => await this.getCompletePage(result.id))
-        )).filter((doc) => doc.status === "fulfilled").map((doc) => doc.value);
+        )).filter((doc) => !!doc);
 
         // Map the raw results to get usable suggestions
         const resultNotes = await Promise.all(results.map(async result => {
@@ -362,13 +362,15 @@ export class SearchEngine {
         return resultNotes.filter(result => result !== null);
     }
 
-    private async getCompletePage(ref: string): Promise<CompletePage> {
+    private async getCompletePage(ref: string): Promise<CompletePage | null> {
         let meta: PageMeta;
 
         try {
             meta = await space.getPageMeta(ref);
         } catch (_) {
-            throw new Error("Couldn't find the specified page");
+            console.log("[Silversearch] Couldn't find the specified page: ", ref);
+
+            return null;
         }
 
         const cached = this.documentCache.get(ref);
