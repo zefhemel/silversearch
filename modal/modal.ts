@@ -14,7 +14,6 @@ async function mountModal() {
             if (!element) return;
 
             (element as HTMLLinkElement).onload = resolve;
-
         })
     ]);
 
