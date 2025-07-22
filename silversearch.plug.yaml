@@ -26,6 +26,10 @@ functions:
     path: "./worker/silversearch.ts:index"
     events:
       - "page:index"
+  deleted:
+    path: "./worker/silversearch.ts:deleted"
+    events:
+      - "page:deleted"
   search:
     path: "./worker/silversearch.ts:search"
     syscall: "silversearch.search"

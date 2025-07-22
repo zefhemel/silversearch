@@ -83,6 +83,22 @@ export class SearchEngine {
         await this.writeToCache();
     }
 
+    public async deletePage(pageRef: string): Promise<void> {
+        await this.deletePages([pageRef]);
+    }
+
+    public async deletePages(pageRefs: string[]): Promise<void> {
+        for (const pageRef of pageRefs) {
+            try {
+                this.minisearch.discard(pageRef);
+            } catch (_) {
+                console.log("[Silversearch] Something went wrong. Failed to delete page")
+            }
+        }
+
+        await this.writeToCache();
+    }
+
     private async search(query: Query, options: { prefixLength: number, singleFilePath?: string }): Promise<SearchResult[]> {
         const settings = await getPlugConfig();
 

@@ -14,7 +14,12 @@ import { publicVersion } from "../dist/public_verion.ts";
 // we don't have direct access to events, i.e. we can't trust that this exists AT ALL
 let searchEngine: SearchEngine | null = null;
 
-let indexQueue: string[] = [];
+type Action = {
+    action: "delete" | "index",
+    ref: string
+}
+
+let actionQueue: Action[] = [];
 
 async function checkIfInitalized() {
     if (searchEngine) return;
@@ -27,9 +32,10 @@ async function checkIfInitalized() {
 
     if (!cacheExists) {
         await searchEngine.fullReindex();
-    } else if (indexQueue.length) {
-        await searchEngine.indexPages(indexQueue);
-        indexQueue = [];
+    } else if (actionQueue.length) {
+        await searchEngine.indexPages(actionQueue.filter((action) => action.action === "index").map((action) => action.ref));
+        await searchEngine.deletePages(actionQueue.filter((action) => action.action === "delete").map((action) => action.ref));
+        actionQueue = [];
     }
 }
 
@@ -56,8 +62,13 @@ export async function init(): Promise<void> {
 
 export async function index({ name }: IndexTreeEvent) {
     // We piggyback of the index event here as that pretty much excatly aligns with our needs.
-    if (!searchEngine) indexQueue.push(name);
+    if (!searchEngine) actionQueue.push({ action: "index", ref: name });
     else await searchEngine.indexPage(name);
+}
+
+export async function deleted(name: string) {
+    if (!searchEngine) actionQueue.push({ action: "delete", ref: name });
+    else await searchEngine.deletePage(name);
 }
 
 export async function search(searchTerm: string, singleFilePath?: string): Promise<ResultPage[]> {
