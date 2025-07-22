@@ -18,7 +18,7 @@ export function highlightText(text: string, matches: SearchMatch[]): string {
             `<span class="${highlightClass}">$1</span>`
         );
     } catch (e) {
-        console.error('Silversearch - Error in highlightText()', e);
+        console.error('[Silversearch] Error in highlightText()', e);
         return text;
     }
 }

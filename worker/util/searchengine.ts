@@ -276,7 +276,7 @@ export class SearchEngine {
         const resultNotes = await Promise.all(results.map(async result => {
             const note = documents.find(d => d.ref === result.id)
             if (!note) {
-                console.warn(`Silversearch - Note "${result.id}" disappeared. Skipping`);
+                console.warn(`[Silversearch] Note "${result.id}" disappeared. Skipping`);
                 return null;
             }
 
