@@ -114,11 +114,8 @@
 
 <ModalContainer onkeydown={onKeyDown} bind:query>
     {#snippet helpText()}
-        Press <code>Enter</code> to open the selected page, press
-        <code>Ctrl-Enter</code>
-        to open the page in a new Tab and press <code>Alt-Enter</code> to insert
-        a link at the cursor. {#if !isDocumentEditor}Use <code>Tab</code> to only
-            search this page.{/if}
+        Press <code>Ctrl-Enter</code> to open in new Tab and <code>Alt-Enter</code> to insert a link.
+        {#if !isDocumentEditor}Use <code>Tab</code> to switch scope.{/if}
     {/snippet}
 
     {#snippet resultList()}

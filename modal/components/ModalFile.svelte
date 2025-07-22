@@ -108,9 +108,7 @@
 
 <ModalContainer onkeydown={onKeyDown} bind:query>
     {#snippet helpText()}
-        Press <code>Enter</code> to open the selected page, press
-        <code>Ctrl-Enter</code>
-        to open the page in a new Tab. Use <code>Tab</code> to search your space.
+        Press <code>Ctrl-Enter</code> to open in new Tab. Use <code>Tab</code> to switch scope.
     {/snippet}
 
     {#snippet resultList()}
