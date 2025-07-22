@@ -5,8 +5,8 @@
     "imports": {
         "minisearch": "npm:minisearch@7.1.2",
         "search-query-parser": "npm:search-query-parser@1.6.0",
-        "zod": "npm:zod@3.25.67/v4",
         "md-link-extractor": "npm:md-link-extractor@1.1.1",
+        "@valibot/valibot": "jsr:@valibot/valibot@^1.1.0",
         "@silverbulletmd/silverbullet/": "jsr:@silverbulletmd/silverbullet@^2.0.0-pre/",
         "@silverbulletmd/silverbullet/syscalls": "jsr:@silverbulletmd/silverbullet@^2.0.0-pre/syscalls",
         "@silverbulletmd/silverbullet/type": "jsr:@silverbulletmd/silverbullet@^2.0.0-pre/type",
