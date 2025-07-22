@@ -24,7 +24,7 @@ export class Query {
 
         // Default values
         parsed.text = parsed.text ?? [];
-        parsed.exclude = parsed.exclude ?? {};
+        parsed.exclude = parsed.exclude ?? { text: [] };
         parsed.exclude.text = parsed.exclude.text ?? [];
         if (!Array.isArray(parsed.exclude.text)) {
             parsed.exclude.text = [parsed.exclude.text];
