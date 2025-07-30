@@ -6,7 +6,7 @@ This is a full-text searching plug for [Silverbullet](https://silverbullet.md/).
 
 ## Installation
 
-The plug is installed like any other plug using SpaceLua, just add the following into a SpaceLua block somewhere in your Space.
+The plug is installed like any other plug using SpaceLua. Just add `"ghr:MrMugame/silversearch"` to the `plugs` array on your `CONFIG` page.
 ```lua
 config.set {
   plugs = {
@@ -14,6 +14,17 @@ config.set {
   }
 }
 ```
+Then, run the `Plugs: Update` update command to download and install the plug.
+
+## Usage
+
+You can open the search dialog using the `Silversearch: Search` command (`Ctrl-s`/`Cmd-s`). Simply start typing to begin your search, helpful tips for refining your searches will appear at the start. If Silversearch is missing the most up-to-date content, you can rebuild the search database using the `Silversearch: Full Reindex` command.
+
+To integrate Silversearch with SpaceLua, use the following syscalls:
+
+- `silversearch.search(searchTerm: string, singleFilePath?: string)`: Searches the database using the `searchTerm`, which supports all functions the normals search also supports (e.g. `ext`, etc.). If `singleFilePath` is provided it will only search the provided file. The function will return an array of [`ResultPage[]`](https://github.com/MrMugame/silversearch/blob/5c4a3b57a8f92336c5e2b1ae29ff9d4b668cd470/shared/global.ts#L6)
+- `silversearch.openSearch(defaultQuery: string = "")`: This opens the search modal. If a default query is provided it will be inserted into the search field.
+- `silversearch.reindex()`: Rebuilds the search database.
 
 ## Settings
 
