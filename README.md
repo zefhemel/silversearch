@@ -22,7 +22,7 @@ You can open the search dialog using the `Silversearch: Search` command (`Ctrl-s
 
 To integrate Silversearch with SpaceLua, use the following syscalls:
 
-- `silversearch.search(searchTerm: string, singleFilePath?: string): ResultPage[]`: Searches the database using the `searchTerm`, which supports all functions the normalssearch also supports (e.g. `ext`, etc.). If `singleFilePath` is provided it will only search the provided file. The function will return an array of [`ResultPage[]`](https://github.com/MrMugame/silversearch/blob/5c4a3b57a8f92336c5e2b1ae29ff9d4b668cd470/shared/global.ts#L6)
+- `silversearch.search(searchTerm: string, singleFilePath?: string): ResultPage[]`: Searches the database using the `searchTerm`, which supports all functions the normal search also supports (e.g. `ext`, etc.). If `singleFilePath` is provided it will only search the provided file. The function will return an array of [`ResultPage`](https://github.com/MrMugame/silversearch/blob/5c4a3b57a8f92336c5e2b1ae29ff9d4b668cd470/shared/global.ts#L6)
 - `silversearch.openSearch(defaultQuery: string = ""): void`: This opens the search modal. If a default query is provided it will be inserted into the search field.
 - `silversearch.reindex(): void`: Rebuilds the search database.
 
