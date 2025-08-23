@@ -12,7 +12,7 @@
         "@silverbulletmd/silverbullet/type": "jsr:@silverbulletmd/silverbullet@^2.0.0-pre/type",
         "@silverbulletmd/silverbullet/lib": "jsr:@silverbulletmd/silverbullet@^2.0.0-pre/lib"
     },
-    "exclude": ["modal/"],
+    "exclude": ["modal/", "vite.config.ts"],
     "lock": false,
     "compilerOptions": {
         "lib": ["es2021", "dom"]

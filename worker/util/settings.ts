@@ -38,7 +38,10 @@ export async function getPlugConfig(): Promise<SilversearchSettings> {
 
     if (!result.success) {
         if (!errorWasShown) {
-            const message = Object.entries(v.flatten<typeof settingsSchema>(result.issues).nested).map(([location, err]) => `${err.join(" & ")} in "${location}"`).join("; ");
+            const message = Object.entries(v.flatten<typeof settingsSchema>(result.issues).nested ?? {})
+                .map(([location, err]) => err ? `${err.join(" & ")} in "${location}"` : "")
+                .filter(str => str)
+                .join("; ");
 
             await editor.flashNotification(`Silersearch - There was an error in your CONFIG: ${message}`);
 
