@@ -89,9 +89,14 @@ export class SearchEngine {
 
     public async deletePages(pageRefs: string[]): Promise<void> {
         for (const pageRef of pageRefs) {
+            if (!(await space.pageExists(pageRef))) {
+                // Silverbullet probably fucked up here, let's just ignore it
+                continue;
+            }
+
             try {
                 this.minisearch.discard(pageRef);
-            } catch (_) {
+            } catch {
                 console.log("[Silversearch] Something went wrong. Failed to delete page")
             }
         }
