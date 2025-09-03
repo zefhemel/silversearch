@@ -18,13 +18,15 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v3
         with:
-          node-version: 23
+          node-version: 24
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
 
       - name: Build step
-        run: "deno task build"
+        run: |
+          deno task build
 
       - name: Update release tag
         uses: rickstaa/action-create-tag@v1
