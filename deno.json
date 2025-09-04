@@ -14,7 +14,7 @@
     },
     "exclude": ["modal/", "vite.config.ts"],
     "compilerOptions": {
-        "lib": ["es2021", "dom"]
+        "lib": ["es2022", "dom"]
     },
     "nodeModulesDir": "none"
 }
