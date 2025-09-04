@@ -9,7 +9,7 @@ functions:
   getVersion:
     path: "./worker/silversearch.ts:showVersion"
     command:
-      name: "Silversearch: Print Version"
+      name: "Silversearch: Version"
   openSearch:
     path: "./worker/silversearch.ts:openSearch"
     syscall: "silversearch.openSearch"
