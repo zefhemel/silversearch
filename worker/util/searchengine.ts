@@ -9,6 +9,8 @@ import { CompletePage, IndexableDocument, RecencyCutoff } from "./global.ts";
 import { getMatches, makeExcerpt } from "./textprocessing.ts";
 import { ResultExcerpt, ResultPage } from "../../shared/global.ts";
 
+const cacheVersion = 1;
+
 export class SearchEngine {
     private minisearch: MiniSearch;
     private documentCache: Map<string, CompletePage>;
@@ -21,8 +23,8 @@ export class SearchEngine {
     public async loadFromCache(settings: SilversearchSettings): Promise<boolean> {
         const cache = await clientStore.get("silversearch-cache");
 
-        if (!cache || typeof (cache) !== "string") {
-            console.log("[Silversearch] Couldn't find cache");
+        if (!cache || cache.version !== cacheVersion || typeof (cache.minisearch) !== "string") {
+            console.log("[Silversearch] Couldn't find cache or cache version mismatched");
             await clientStore.del("silversearch-cache");
 
             return false;
@@ -38,9 +40,10 @@ export class SearchEngine {
     }
 
     public async writeToCache(): Promise<void> {
-        const cache = JSON.stringify(this.minisearch);
-
-        await clientStore.set("silversearch-cache", cache);
+        await clientStore.set("silversearch-cache", {
+            version: cacheVersion,
+            minisearch: JSON.stringify(this.minisearch),
+        });
     }
 
     public async fullReindex(): Promise<void> {
