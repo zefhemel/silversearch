@@ -17,7 +17,7 @@ functions:
     path: "./worker/silversearch.ts:reindex"
     syscall: "silversearch.reindex"
     command:
-      name: "Silversearch: Full Reindex"
+      name: "Silversearch: Reindex"
   init:
     path: "./worker/silversearch.ts:init"
     events:

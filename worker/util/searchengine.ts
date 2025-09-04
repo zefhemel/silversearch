@@ -48,7 +48,7 @@ export class SearchEngine {
         });
     }
 
-    public async fullReindex(): Promise<void> {
+    public async reindex(): Promise<void> {
         await editor.flashNotification("Silversearch - Fully reindexing, this can cause performance problems");
         this.minisearch.removeAll();
 

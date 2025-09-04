@@ -30,7 +30,7 @@ async function checkIfInitalized() {
 
     if (!searchEngine) {
         searchEngine = new SearchEngine(settings);
-        await searchEngine.fullReindex();
+        await searchEngine.reindex();
     } else if (actionQueue.length) {
         await searchEngine.indexPages(actionQueue.filter((action) => action.action === "index").map((action) => action.name));
         await searchEngine.deletePages(actionQueue.filter((action) => action.action === "delete").map((action) => action.name));
