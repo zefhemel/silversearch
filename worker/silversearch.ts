@@ -47,7 +47,7 @@ export async function openSearch(defaultQuery: string  = ""): Promise<void> {
         // We can't have a falsy value (0) here, because of some silverbullet oddities
         1,
         styles ? `<style>${styles}</style>` + html : html,
-        defaultQuery ? `globalThis.DEFAULT_QUERY = "${defaultQuery}";` + script : script,
+        defaultQuery ? `globalThis.DEFAULT_QUERY = ${JSON.stringify(defaultQuery)};` + script : script,
     );
 }
 
