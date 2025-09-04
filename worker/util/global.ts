@@ -16,8 +16,8 @@ export const SPACE_OR_PUNCTUATION = new RegExp(`${SEPARATORS}+`, 'u');
 export const BRACKETS_AND_SPACE = /[|\[\]\(\)<>\{\} \t\n\r]/u;
 
 export type IndexableDocument = {
-    // Contains the extension for documents and does *not* for pages
-    ref: string;
+    // This is a name according to SBs definition
+    name: string;
     basename: string;
     directory: string;
     tags: string[];

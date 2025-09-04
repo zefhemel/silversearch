@@ -16,7 +16,7 @@ let searchEngine: SearchEngine | null = null;
 
 type Action = {
     action: "delete" | "index",
-    ref: string
+    name: string
 }
 
 let actionQueue: Action[] = [];
@@ -33,8 +33,8 @@ async function checkIfInitalized() {
     if (!cacheExists) {
         await searchEngine.fullReindex();
     } else if (actionQueue.length) {
-        await searchEngine.indexPages(actionQueue.filter((action) => action.action === "index").map((action) => action.ref));
-        await searchEngine.deletePages(actionQueue.filter((action) => action.action === "delete").map((action) => action.ref));
+        await searchEngine.indexPages(actionQueue.filter((action) => action.action === "index").map((action) => action.name));
+        await searchEngine.deletePages(actionQueue.filter((action) => action.action === "delete").map((action) => action.name));
         actionQueue = [];
     }
 }
@@ -62,16 +62,16 @@ export async function init(): Promise<void> {
 
 export async function index({ name }: IndexTreeEvent) {
     // We piggyback of the index event here as that pretty much excatly aligns with our needs.
-    if (!searchEngine) actionQueue.push({ action: "index", ref: name });
+    if (!searchEngine) actionQueue.push({ action: "index", name });
     else await searchEngine.indexPage(name);
 }
 
 export async function deleted(name: string) {
-    if (!searchEngine) actionQueue.push({ action: "delete", ref: name });
+    if (!searchEngine) actionQueue.push({ action: "delete", name });
     else await searchEngine.deletePage(name);
 }
 
-export async function search(searchTerm: string, singleFilePath?: string): Promise<ResultPage[]> {
+export async function search(searchTerm: string, singleName?: string): Promise<ResultPage[]> {
     await checkIfInitalized();
 
     const settings = await getPlugConfig();
@@ -81,7 +81,7 @@ export async function search(searchTerm: string, singleFilePath?: string): Promi
       ignoreArabicDiacritics: settings.ignoreArabicDiacritics,
     });
 
-    return searchEngine!.getSuggestions(query, { singleFilePath });
+    return searchEngine!.getSuggestions(query, { singleName });
 }
 
 export async function reindex() {

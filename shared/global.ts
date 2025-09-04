@@ -5,7 +5,7 @@ export type SearchMatch = {
 
 export type ResultPage = {
     score: number;
-    ref: string;
+    name: string;
     basename: string;
     content: string;
     foundWords: string[];

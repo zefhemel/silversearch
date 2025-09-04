@@ -73,7 +73,7 @@ export class SearchEngine {
 
                 const document = await SearchEngine.pageMetaToIndexablePage(pageMeta);
 
-                if (this.minisearch.has(document.ref)) this.minisearch.replace(document);
+                if (this.minisearch.has(document.name)) this.minisearch.replace(document);
                 else this.minisearch.add(document);
             } catch (_) {
                 console.log(`[Silversearch] Failed to index ${pageRef}. Skipping!`);
@@ -104,7 +104,7 @@ export class SearchEngine {
         await this.writeToCache();
     }
 
-    private async search(query: Query, options: { prefixLength: number, singleFilePath?: string }): Promise<SearchResult[]> {
+    private async search(query: Query, options: { prefixLength: number, singleName?: string }): Promise<SearchResult[]> {
         const settings = await getPlugConfig();
 
         if (query.isEmpty()) return [];
@@ -184,8 +184,8 @@ export class SearchEngine {
             return [];
         }
 
-        if (options.singleFilePath) {
-            return results.filter(r => r.id === options.singleFilePath);
+        if (options.singleName) {
+            return results.filter(r => r.id === options.singleName);
         }
 
         // TODO: This could be heavy on performance. We should also use a map here
@@ -197,26 +197,25 @@ export class SearchEngine {
         const tags = query.getTags();
 
         for (const result of results) {
-            const path = result.id;
+            const name = result.id;
             if (settings.downrankedFoldersFilters.length > 0) {
                 // downrank files that are in folders listed in the downrankedFoldersFilters
                 let downrankingFolder = false;
 
                 settings.downrankedFoldersFilters.forEach(filter => {
-                    if (path.startsWith(filter)) {
+                    if (name.startsWith(filter)) {
                         // we don't want the filter to match the folder sources, e.g.
                         // it needs to match a whole folder name
-                        if (path === filter || path.startsWith(filter + '/')) downrankingFolder = true;
+                        if (name === filter || name.startsWith(filter + '/')) downrankingFolder = true;
                     }
                 })
 
                 if (downrankingFolder) result.score /= 10;
 
-                const pathParts = path.split('/');
-                const pathPartsLength = pathParts.length;
+                const nameParts = name.split('/');
 
-                for (let i = 0; i < pathPartsLength; i++) {
-                    const pathPart = pathParts[i];
+                for (let i = 0; i < nameParts.length; i++) {
+                    const pathPart = nameParts[i];
                     if (settings.downrankedFoldersFilters.includes(pathPart)) {
                         result.score /= 10;
                         break;
@@ -225,7 +224,7 @@ export class SearchEngine {
             }
 
 
-            const metadata = documents.find((d) => d.ref === path)?.metadata;
+            const metadata = documents.find((d) => d.name === name)?.metadata;
             if (metadata) {
                 // Boost custom properties
                 for (const [name, weight] of Object.entries(settings.weightCustomProperties)) {
@@ -252,8 +251,8 @@ export class SearchEngine {
         const exactTerms = query.getExactTerms();
         if (exactTerms.length) {
             results = results.filter(r => {
-                const document = documents.find(d => d.ref === r.id);
-                const title = document?.ref.toLowerCase() ?? "";
+                const document = documents.find(d => d.name === r.id);
+                const title = document?.name.toLowerCase() ?? "";
                 const content = (document?.cleanedContent ?? "").toLowerCase();
                 return exactTerms.every(
                     q =>
@@ -271,7 +270,7 @@ export class SearchEngine {
         if (exclusions.length) {
             results = results.filter(r => {
                 const content = (
-                    documents.find(d => d.ref === r.id)?.content ?? ""
+                    documents.find(d => d.name === r.id)?.content ?? ""
                 ).toLowerCase();
                 return exclusions.every(q => !content.includes(q));
             });
@@ -282,11 +281,11 @@ export class SearchEngine {
 
     public async getSuggestions(
         query: Query,
-        options?: Partial<{ singleFilePath?: string }>
+        options?: Partial<{ singleName?: string }>
     ): Promise<ResultPage[]> {
         const results = await this.search(query, {
             prefixLength: 1,
-            singleFilePath: options?.singleFilePath,
+            singleName: options?.singleName,
         });
 
         const documents = (await Promise.all(
@@ -295,7 +294,7 @@ export class SearchEngine {
 
         // Map the raw results to get usable suggestions
         const resultNotes = await Promise.all(results.map(async result => {
-            const note = documents.find(d => d.ref === result.id)
+            const note = documents.find(d => d.name === result.id)
             if (!note) {
                 console.warn(`[Silversearch] Note "${result.id}" disappeared. Skipping`);
                 return null;
@@ -323,13 +322,13 @@ export class SearchEngine {
 
             // Generating these here is a little performance heavy but safes us from having a lot of doubled code in the frontend
             const matchesName = await getMatches(
-                note.ref,
+                note.name,
                 foundWords
             );
 
             let excerpts: ResultExcerpt[];
 
-            if (options?.singleFilePath) {
+            if (options?.singleName) {
                 let groups = getGroups(matches);
 
                 // If there are quotes in the search,
@@ -401,7 +400,7 @@ export class SearchEngine {
 
 
         return {
-            ref: page.name,
+            name: page.name,
             basename: page.name.split("/").pop() ?? page.name,
             directory: page.name.split("/").splice(-1).join() ?? "",
             aliases: page.aliases ?? [],
@@ -420,7 +419,7 @@ export class SearchEngine {
                 ? removeDiacritics(term, settings.ignoreArabicDiacritics)
                 : term
             ).toLowerCase(),
-            idField: "ref",
+            idField: "name",
             fields: [
                 "content",
                 "basename",

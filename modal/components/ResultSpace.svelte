@@ -18,7 +18,7 @@
 
 <ResultContainer {onmousemove} {onclick} {selected}>
     {#snippet title()}
-        {@html highlightText(result.ref, result.matchesName)}
+        {@html highlightText(result.name, result.matchesName)}
     {/snippet}
     {#snippet info()}
         {result.matches.length} Matches

@@ -64,11 +64,7 @@
 
         await syscall(
             "editor.navigate",
-            {
-                kind: "page",
-                page: result.ref,
-                pos: offset,
-            },
+            `${result.name}@${offset}`,
             false,
             openInNewTab,
         );
