@@ -25,7 +25,7 @@ export class SearchEngine {
 
         if (!cache || cache.version !== cacheVersion || typeof (cache.minisearch) !== "string") {
             console.log("[Silversearch] Couldn't find cache or cache version mismatched");
-            await clientStore.del("silversearch-cache");
+            SearchEngine.deleteCache();
 
             return null;
         }
