@@ -4,7 +4,7 @@ import { SearchResult, Options, default as MiniSearch } from "minisearch"
 import { Query } from "./query.ts";
 import { getPlugConfig, SilversearchSettings } from "./settings.ts";
 import { tokenizeForIndexing, tokenizeForSearch } from "./tokenizer.ts";
-import { getGroups, removeDiacritics, stripMarkdownCharacters } from "./utils.ts";
+import { getGroups, removeDiacritics, stripMarkdownCharacters, trackPromiseProgress } from "./utils.ts";
 import { CompletePage, IndexableDocument, RecencyCutoff } from "./global.ts";
 import { getMatches, makeExcerpt } from "./textprocessing.ts";
 import { ResultExcerpt, ResultPage } from "../../shared/global.ts";
@@ -56,13 +56,21 @@ export class SearchEngine {
         const pages = await space.listPages();
 
         console.log(`[Silversearch] Indexing ${pages.length} pages`);
+        await editor.showProgress(0, "index");
 
-        const cleanedPages: IndexableDocument[] = await Promise.all(pages.map(SearchEngine.pageMetaToIndexablePage));
+        const cleanedPages: IndexableDocument[] = await trackPromiseProgress(
+            pages.map(SearchEngine.pageMetaToIndexablePage),
+            (done, all) => {
+                // Don't await, we don't care
+                editor.showProgress(Math.round(done / all * 100), "index");
+            }
+        );
 
         await this.minisearch.addAllAsync(cleanedPages);
 
         await this.writeToCache();
 
+        await editor.showProgress();
         await editor.flashNotification("Silversearch - Full reindex done!");
     }
 
