@@ -25,12 +25,11 @@ async function checkIfInitalized() {
     if (searchEngine) return;
 
     const settings = await getPlugConfig();
-    searchEngine = new SearchEngine(settings);
-
     // We want to try to load from cache, if that fails create the index and cache it
-    const cacheExists = await searchEngine.loadFromCache(settings);
+    searchEngine = await SearchEngine.loadFromCache(settings);
 
-    if (!cacheExists) {
+    if (!searchEngine) {
+        searchEngine = new SearchEngine(settings);
         await searchEngine.fullReindex();
     } else if (actionQueue.length) {
         await searchEngine.indexPages(actionQueue.filter((action) => action.action === "index").map((action) => action.name));

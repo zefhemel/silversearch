@@ -20,19 +20,21 @@ export class SearchEngine {
         this.documentCache = new Map();
     }
 
-    public async loadFromCache(settings: SilversearchSettings): Promise<boolean> {
+    public static async loadFromCache(settings: SilversearchSettings): Promise<SearchEngine | null> {
         const cache = await clientStore.get("silversearch-cache");
 
         if (!cache || cache.version !== cacheVersion || typeof (cache.minisearch) !== "string") {
             console.log("[Silversearch] Couldn't find cache or cache version mismatched");
             await clientStore.del("silversearch-cache");
 
-            return false;
+            return null;
         }
 
-        this.minisearch = await MiniSearch.loadJSONAsync(cache, SearchEngine.getOptions(settings));
+        const searchEngine = new SearchEngine(settings);
 
-        return true;
+        searchEngine.minisearch = await MiniSearch.loadJSONAsync(cache.minisearch, SearchEngine.getOptions(settings));
+
+        return searchEngine;
     }
 
     public static async deleteCache() {
