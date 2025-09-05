@@ -1,23 +1,25 @@
 import { clientStore, editor, space } from "@silverbulletmd/silverbullet/syscalls";
-import { PageMeta } from "@silverbulletmd/silverbullet/type/index";
+import { DocumentMeta, PageMeta } from "@silverbulletmd/silverbullet/type/index";
 import { SearchResult, Options, default as MiniSearch } from "minisearch"
 import { Query } from "./query.ts";
 import { getPlugConfig, SilversearchSettings } from "./settings.ts";
 import { tokenizeForIndexing, tokenizeForSearch } from "./tokenizer.ts";
 import { getGroups, removeDiacritics, stripMarkdownCharacters, trackPromiseProgress } from "./utils.ts";
-import { CompletePage, IndexableDocument, RecencyCutoff } from "./global.ts";
+import { CompleteEntry, IndexableEntry, RecencyCutoff } from "./global.ts";
 import { getMatches, makeExcerpt } from "./textprocessing.ts";
 import { ResultExcerpt, ResultPage } from "../../shared/global.ts";
+import { getNameFromPath, isMarkdownPath, Path } from "@silverbulletmd/silverbullet/lib/ref";
+import { fileName, folderName } from "@silverbulletmd/silverbullet/lib/resolve";
 
-const cacheVersion = 1;
+const cacheVersion = 2;
 
 export class SearchEngine {
     private minisearch: MiniSearch;
-    private documentCache: Map<string, CompletePage>;
+    private entryCache: Map<string, CompleteEntry>;
 
     constructor(settings: SilversearchSettings) {
         this.minisearch = new MiniSearch(SearchEngine.getOptions(settings));
-        this.documentCache = new Map();
+        this.entryCache = new Map();
     }
 
     public static async loadFromCache(settings: SilversearchSettings): Promise<SearchEngine | null> {
@@ -52,21 +54,24 @@ export class SearchEngine {
         await editor.flashNotification("Silversearch - Fully reindexing, this can cause performance problems");
         this.minisearch.removeAll();
 
-        // We only index pages right now
-        const pages = await space.listPages();
+        // We could also use listDocuments and listPages, overhead is probably
+        // similar tho, but we would have to filter stuff like plugs ourselfs
+        const files = (await space.listFiles())
+            .map(file => file.name as Path)
+            .filter(this.isIndexedPath);
 
-        console.log(`[Silversearch] Indexing ${pages.length} pages`);
+        console.log(`[Silversearch] Indexing ${files.length} pages`);
         await editor.showProgress(0, "index");
 
-        const cleanedPages: IndexableDocument[] = await trackPromiseProgress(
-            pages.map(SearchEngine.pageMetaToIndexablePage),
+        const cleanedEntries: IndexableEntry[] = await trackPromiseProgress(
+            files.map(file => SearchEngine.pathToIndexableEntry(file)),
             (done, all) => {
                 // Don't await, we don't care
                 editor.showProgress(Math.round(done / all * 100), "index");
             }
         );
 
-        await this.minisearch.addAllAsync(cleanedPages);
+        await this.minisearch.addAllAsync(cleanedEntries);
 
         await this.writeToCache();
 
@@ -74,41 +79,40 @@ export class SearchEngine {
         await editor.flashNotification("Silversearch - Full reindex done!");
     }
 
-    public async indexPage(pageRef: string): Promise<void> {
-        await this.indexPages([pageRef]);
+    public async indexByPath(path: Path): Promise<void> {
+        await this.indexByPaths([path]);
     }
 
-    public async indexPages(pageRefs: string[]): Promise<void> {
-        for (const pageRef of pageRefs) {
+    public async indexByPaths(paths: Path[]): Promise<void> {
+        for (const path of paths) {
             try {
-                console.log(`[Silversearch] Indexing ${pageRef}`);
-                const pageMeta = await space.getPageMeta(pageRef);
+                console.log(`[Silversearch] Indexing ${getNameFromPath(path)}`);
 
-                const document = await SearchEngine.pageMetaToIndexablePage(pageMeta);
+                const document = await SearchEngine.pathToIndexableEntry(path);
 
-                if (this.minisearch.has(document.name)) this.minisearch.replace(document);
+                if (this.minisearch.has(document.path)) this.minisearch.replace(document);
                 else this.minisearch.add(document);
             } catch (_) {
-                console.log(`[Silversearch] Failed to index ${pageRef}. Skipping!`);
+                console.log(`[Silversearch] Failed to index ${getNameFromPath(path)}. Skipping!`);
             }
         }
 
         await this.writeToCache();
     }
 
-    public async deletePage(pageRef: string): Promise<void> {
-        await this.deletePages([pageRef]);
+    public async deleteByPath(path: Path): Promise<void> {
+        await this.deleteByPaths([path]);
     }
 
-    public async deletePages(pageRefs: string[]): Promise<void> {
-        for (const pageRef of pageRefs) {
-            if (!(await space.pageExists(pageRef))) {
+    public async deleteByPaths(paths: Path[]): Promise<void> {
+        for (const path of paths) {
+            if (!(await space.fileExists(path))) {
                 // Silverbullet probably fucked up here, let's just ignore it
                 continue;
             }
 
             try {
-                this.minisearch.discard(pageRef);
+                this.minisearch.discard(path);
             } catch {
                 console.log("[Silversearch] Something went wrong. Failed to delete page")
             }
@@ -117,7 +121,7 @@ export class SearchEngine {
         await this.writeToCache();
     }
 
-    private async search(query: Query, options: { prefixLength: number, singleName?: string }): Promise<SearchResult[]> {
+    private async search(query: Query, options: { prefixLength: number, singleFilePath?: string }): Promise<SearchResult[]> {
         const settings = await getPlugConfig();
 
         if (query.isEmpty()) return [];
@@ -197,47 +201,33 @@ export class SearchEngine {
             return [];
         }
 
-        if (options.singleName) {
-            return results.filter(r => r.id === options.singleName);
+        if (options.singleFilePath) {
+            return results.filter(r => r.id === options.singleFilePath);
         }
 
         // TODO: This could be heavy on performance. We should also use a map here
         const documents = (await Promise.all(
-            results.map(async result => await this.getCompletePage(result.id))
+            results.map(async result => await this.getCompleteEntry(result.id))
         )).filter((doc) => !!doc);
 
         // Extract tags from the query
         const tags = query.getTags();
 
         for (const result of results) {
-            const name = result.id;
+            const path = result.id;
+            const name = getNameFromPath(path);
             if (settings.downrankedFoldersFilters.length > 0) {
                 // downrank files that are in folders listed in the downrankedFoldersFilters
-                let downrankingFolder = false;
-
-                settings.downrankedFoldersFilters.forEach(filter => {
-                    if (name.startsWith(filter)) {
-                        // we don't want the filter to match the folder sources, e.g.
-                        // it needs to match a whole folder name
-                        if (name === filter || name.startsWith(filter + '/')) downrankingFolder = true;
-                    }
-                })
+                const downrankingFolder =
+                    // Check that it matches a whole folder name, so we don't get partial matches
+                    settings.downrankedFoldersFilters.some(filter => name === filter || name.startsWith(filter + '/')) ||
+                    name.split('/').some(part => settings.downrankedFoldersFilters.includes(part));
 
                 if (downrankingFolder) result.score /= 10;
-
-                const nameParts = name.split('/');
-
-                for (let i = 0; i < nameParts.length; i++) {
-                    const pathPart = nameParts[i];
-                    if (settings.downrankedFoldersFilters.includes(pathPart)) {
-                        result.score /= 10;
-                        break;
-                    }
-                }
             }
 
 
-            const metadata = documents.find((d) => d.name === name)?.metadata;
+            const metadata = documents.find((d) => d.path === path)?.metadata;
             if (metadata) {
                 // Boost custom properties
                 for (const [name, weight] of Object.entries(settings.weightCustomProperties)) {
@@ -264,7 +254,7 @@ export class SearchEngine {
         const exactTerms = query.getExactTerms();
         if (exactTerms.length) {
             results = results.filter(r => {
-                const document = documents.find(d => d.name === r.id);
+                const document = documents.find(d => d.path === r.id);
                 const title = document?.name.toLowerCase() ?? "";
                 const content = (document?.cleanedContent ?? "").toLowerCase();
                 return exactTerms.every(
@@ -283,7 +273,7 @@ export class SearchEngine {
         if (exclusions.length) {
             results = results.filter(r => {
                 const content = (
-                    documents.find(d => d.name === r.id)?.content ?? ""
+                    documents.find(d => d.path === r.id)?.content ?? ""
                 ).toLowerCase();
                 return exclusions.every(q => !content.includes(q));
             });
@@ -294,22 +284,22 @@ export class SearchEngine {
 
     public async getSuggestions(
         query: Query,
-        options?: Partial<{ singleName?: string }>
+        options?: Partial<{ singleFilePath?: string }>
     ): Promise<ResultPage[]> {
         const results = await this.search(query, {
             prefixLength: 1,
-            singleName: options?.singleName,
+            singleFilePath: options?.singleFilePath,
         });
 
         const documents = (await Promise.all(
-            results.map(async result => await this.getCompletePage(result.id))
+            results.map(async result => await this.getCompleteEntry(result.id))
         )).filter((doc) => !!doc);
 
         // Map the raw results to get usable suggestions
         const resultNotes = await Promise.all(results.map(async result => {
-            const note = documents.find(d => d.name === result.id)
+            const note = documents.find(d => d.path === result.id)
             if (!note) {
-                console.warn(`[Silversearch] Note "${result.id}" disappeared. Skipping`);
+                console.warn(`[Silversearch] Note "${result.name}" disappeared. Skipping`);
                 return null;
             }
 
@@ -341,7 +331,7 @@ export class SearchEngine {
 
             let excerpts: ResultExcerpt[];
 
-            if (options?.singleName) {
+            if (options?.singleFilePath) {
                 let groups = getGroups(matches);
 
                 // If there are quotes in the search,
@@ -379,60 +369,77 @@ export class SearchEngine {
         return resultNotes.filter(result => result !== null);
     }
 
-    private async getCompletePage(ref: string): Promise<CompletePage | null> {
-        let meta: PageMeta;
+    private async getCompleteEntry(path: Path): Promise<CompleteEntry | null> {
+        let meta: PageMeta | DocumentMeta;
 
         try {
-            meta = await space.getPageMeta(ref);
-        } catch (_) {
-            console.log("[Silversearch] Couldn't find the specified page: ", ref);
+            const name = getNameFromPath(path);
+
+            meta = isMarkdownPath(path)
+                ? await space.getPageMeta(name)
+                : await space.getDocumentMeta(name);
+        } catch {
+            console.log("[Silversearch] Couldn't find the specified page:", path);
 
             return null;
         }
 
-        const cached = this.documentCache.get(ref);
+        const cached = this.entryCache.get(path);
         if (cached && new Date(meta.lastModified).getTime() === cached.lastModified) return cached;
 
-        const result = await SearchEngine.pageMetaToIndexablePage(meta);
+        const result = await SearchEngine.pathToIndexableEntry(path, meta);
 
-        const metadata = Object.fromEntries(Object.entries(meta).filter(([key, _]) => !["ref", "tag", "tags", "itags", "name", "created", "lastModified", "perm", "lastOpened", "pageDecoration", "aliases"].includes(key)));
+        // TODO: This is cursed, move this out of here
+        const metadata = Object.fromEntries(Object.entries(meta).filter(([key, _]) => !["ref", "tag", "tags", "itags", "name", "created", "lastModified", "perm", "lastOpened", "pageDecoration", "aliases", "extension", "size", "contentType"].includes(key)));
 
-        const completePage = {
+        const entry = {
             ...result,
             cleanedContent: stripMarkdownCharacters(removeDiacritics(result.content)),
             metadata
         }
 
-        this.documentCache.set(ref, completePage);
+        this.entryCache.set(path, entry);
 
-        return completePage;
+        return entry;
     }
 
-    private static async pageMetaToIndexablePage(page: PageMeta): Promise<IndexableDocument> {
-        const content = await space.readPage(page.ref);
+    private static async pathToIndexableEntry(path: Path, cachedMeta?: PageMeta | DocumentMeta): Promise<IndexableEntry> {
+        const name = getNameFromPath(path);
 
+        // TODO: This can potentially fail
+        const [meta, content] = isMarkdownPath(path)
+            ? [cachedMeta ?? await space.getPageMeta(name), await space.readPage(name)]
+            // TODO: Extract content for documents
+            : [cachedMeta ?? await space.getDocumentMeta(name), ""];
 
-        return {
-            name: page.name,
-            basename: page.name.split("/").pop() ?? page.name,
-            directory: page.name.split("/").splice(-1).join() ?? "",
-            aliases: page.aliases ?? [],
-            displayName: page.displayName ?? "",
-            tags: page.tags?.map((tag) => "#" + tag) ?? [],
-            unmarkedTags: page.tags ?? [],
-            content: content,
-            lastModified: new Date(page.lastModified).getTime(),
-        }
+        const entry: IndexableEntry = {
+            path,
+            name,
+            content,
+            aliases: meta.aliases ?? [],
+            displayName: meta.displayName ?? "",
+            basename: fileName(name),
+            directory: folderName(name),
+            tags: meta.tags?.map((tag) => "#" + tag) ?? [],
+            unmarkedTags: meta.tags ?? [],
+            lastModified: new Date(meta.lastModified).getTime(),
+        };
+
+        return entry;
     }
 
-    private static getOptions(settings: SilversearchSettings): Options<IndexableDocument> {
+    private isIndexedPath(path: Path) {
+        return !path.startsWith("_plug/");
+    }
+
+    private static getOptions(settings: SilversearchSettings): Options<IndexableEntry> {
         return {
             tokenize: (text: string) => tokenizeForIndexing(text, { tokenizeUrls: settings.tokenizeUrls }),
             processTerm: (term: string) => (settings.ignoreDiacritics
                 ? removeDiacritics(term, settings.ignoreArabicDiacritics)
                 : term
             ).toLowerCase(),
-            idField: "name",
+            idField: "path",
             fields: [
                 "content",
                 "basename",

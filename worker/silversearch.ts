@@ -1,5 +1,6 @@
 import { editor, syscall } from "@silverbulletmd/silverbullet/syscalls";
 import { IndexTreeEvent } from "@silverbulletmd/silverbullet/type/event";
+import { Path } from "@silverbulletmd/silverbullet/lib/ref";
 
 import script from "../dist/modal.iife.js.ts"
 import html from "../dist/modal.html.ts"
@@ -16,7 +17,7 @@ let searchEngine: SearchEngine | null = null;
 
 type Action = {
     action: "delete" | "index",
-    name: string
+    path: Path
 }
 
 let actionQueue: Action[] = [];
@@ -32,8 +33,8 @@ async function checkIfInitalized() {
         searchEngine = new SearchEngine(settings);
         await searchEngine.reindex();
     } else if (actionQueue.length) {
-        await searchEngine.indexPages(actionQueue.filter((action) => action.action === "index").map((action) => action.name));
-        await searchEngine.deletePages(actionQueue.filter((action) => action.action === "delete").map((action) => action.name));
+        await searchEngine.indexByPaths(actionQueue.filter((action) => action.action === "index").map((action) => action.path));
+        await searchEngine.deleteByPaths(actionQueue.filter((action) => action.action === "delete").map((action) => action.path));
         actionQueue = [];
     }
 }
@@ -55,22 +56,30 @@ export async function startSearch(): Promise<void> {
 }
 
 export async function init(): Promise<void> {
-    // Just to be sure
+    // Create it now as all systems should be fully initalized, so we can handle
+    // all the queued paths
     await checkIfInitalized();
 }
 
-export async function index({ name }: IndexTreeEvent) {
+export async function indexPage({ name }: IndexTreeEvent) {
     // We piggyback of the index event here as that pretty much excatly aligns with our needs.
-    if (!searchEngine) actionQueue.push({ action: "index", name });
-    else await searchEngine.indexPage(name);
+    const path: Path = `${name}.md`;
+    if (!searchEngine) actionQueue.push({ action: "index", path });
+    else await searchEngine.indexByPath(path);
 }
 
-export async function deleted(name: string) {
-    if (!searchEngine) actionQueue.push({ action: "delete", name });
-    else await searchEngine.deletePage(name);
+export async function indexDocument({ name }: IndexTreeEvent) {
+    const path: Path = name as Path;
+    if (!searchEngine) actionQueue.push({ action: "index", path });
+    else await searchEngine.indexByPath(path);
 }
 
-export async function search(searchTerm: string, singleName?: string): Promise<ResultPage[]> {
+export async function deleted(path: Path) {
+    if (!searchEngine) actionQueue.push({ action: "delete", path });
+    else await searchEngine.deleteByPath(path);
+}
+
+export async function search(searchTerm: string, singleFilePath?: string): Promise<ResultPage[]> {
     await checkIfInitalized();
 
     const settings = await getPlugConfig();
@@ -80,7 +89,7 @@ export async function search(searchTerm: string, singleName?: string): Promise<R
       ignoreArabicDiacritics: settings.ignoreArabicDiacritics,
     });
 
-    return searchEngine!.getSuggestions(query, { singleName });
+    return searchEngine!.getSuggestions(query, { singleFilePath });
 }
 
 export async function reindex() {

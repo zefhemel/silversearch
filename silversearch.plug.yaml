@@ -22,14 +22,18 @@ functions:
     path: "./worker/silversearch.ts:init"
     events:
       - "editor:init"
-  index:
-    path: "./worker/silversearch.ts:index"
+  indexPage:
+    path: "./worker/silversearch.ts:indexPage"
     events:
       - "page:index"
+  indexDocument:
+    path: "./worker/silversearch.ts:indexDocument"
+    events:
+      - "document:index"
   deleted:
     path: "./worker/silversearch.ts:deleted"
     events:
-      - "page:deleted"
+      - "file:deleted"
   search:
     path: "./worker/silversearch.ts:search"
     syscall: "silversearch.search"

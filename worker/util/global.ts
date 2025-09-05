@@ -1,3 +1,5 @@
+import type { Path } from "@silverbulletmd/silverbullet/lib/ref";
+
 export const excerptBefore = 100;
 export const excerptAfter = 300;
 
@@ -15,8 +17,9 @@ export const SEPARATORS =
 export const SPACE_OR_PUNCTUATION = new RegExp(`${SEPARATORS}+`, 'u');
 export const BRACKETS_AND_SPACE = /[|\[\]\(\)<>\{\} \t\n\r]/u;
 
-export type IndexableDocument = {
-    // This is a name according to SBs definition
+export type IndexableEntry = {
+    // This is a path according to SBs definition
+    path: Path;
     name: string;
     basename: string;
     directory: string;
@@ -30,7 +33,7 @@ export type IndexableDocument = {
     content: string;
 }
 
-export type CompletePage = IndexableDocument & {
+export type CompleteEntry = IndexableEntry & {
     cleanedContent: string;
     // deno-lint-ignore no-explicit-any
     metadata: Record<string, any>;
