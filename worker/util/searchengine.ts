@@ -63,7 +63,7 @@ export class SearchEngine {
         console.log(`[Silversearch] Indexing ${files.length} pages`);
         await editor.showProgress(0, "index");
 
-        const cleanedEntries: IndexableEntry[] = await trackPromiseProgress(
+        const entries = await trackPromiseProgress(
             files.map(file => SearchEngine.pathToIndexableEntry(file)),
             (done, all) => {
                 // Don't await, we don't care
@@ -71,7 +71,7 @@ export class SearchEngine {
             }
         );
 
-        await this.minisearch.addAllAsync(cleanedEntries);
+        await this.minisearch.addAllAsync(entries.filter(entry => !!entry));
 
         await this.writeToCache();
 
@@ -88,11 +88,12 @@ export class SearchEngine {
             try {
                 console.log(`[Silversearch] Indexing ${getNameFromPath(path)}`);
 
-                const document = await SearchEngine.pathToIndexableEntry(path);
+                const entry = await SearchEngine.pathToIndexableEntry(path);
+                if (!entry) throw null;
 
-                if (this.minisearch.has(document.path)) this.minisearch.replace(document);
-                else this.minisearch.add(document);
-            } catch (_) {
+                if (this.minisearch.has(entry.path)) this.minisearch.replace(entry);
+                else this.minisearch.add(entry);
+            } catch {
                 console.log(`[Silversearch] Failed to index ${getNameFromPath(path)}. Skipping!`);
             }
         }
@@ -388,6 +389,7 @@ export class SearchEngine {
         if (cached && new Date(meta.lastModified).getTime() === cached.lastModified) return cached;
 
         const result = await SearchEngine.pathToIndexableEntry(path, meta);
+        if (!result) return null;
 
         // TODO: This is cursed, move this out of here
         const metadata = Object.fromEntries(Object.entries(meta).filter(([key, _]) => !["ref", "tag", "tags", "itags", "name", "created", "lastModified", "perm", "lastOpened", "pageDecoration", "aliases", "extension", "size", "contentType"].includes(key)));
@@ -403,14 +405,18 @@ export class SearchEngine {
         return entry;
     }
 
-    private static async pathToIndexableEntry(path: Path, cachedMeta?: PageMeta | DocumentMeta): Promise<IndexableEntry> {
+    private static async pathToIndexableEntry(path: Path, cachedMeta?: PageMeta | DocumentMeta): Promise<IndexableEntry | null> {
         const name = getNameFromPath(path);
 
-        // TODO: This can potentially fail
-        const [meta, content] = isMarkdownPath(path)
-            ? [cachedMeta ?? await space.getPageMeta(name), await space.readPage(name)]
-            // TODO: Extract content for documents
-            : [cachedMeta ?? await space.getDocumentMeta(name), ""];
+        let meta, content;
+        try {
+            [meta, content] = isMarkdownPath(path)
+                ? [cachedMeta ?? await space.getPageMeta(name), await space.readPage(name)]
+                // TODO: Extract content for documents
+                : [cachedMeta ?? await space.getDocumentMeta(name), ""];
+        } catch {
+            return null;
+        }
 
         const entry: IndexableEntry = {
             path,
