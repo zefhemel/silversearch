@@ -13,9 +13,16 @@ export type ResultPage = {
 
     matchesName: SearchMatch[];
     excerpts: ResultExcerpt[];
+
+    navigationMap?: NavigationMap;
 }
 
 export type ResultExcerpt = {
     offset: number;
     excerpt: string;
 }
+
+export type NavigationRoute =
+    | { type: "range", from: number, to: number, tail: string }
+
+export type NavigationMap = NavigationRoute[];

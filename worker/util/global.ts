@@ -1,4 +1,5 @@
 import type { Path } from "@silverbulletmd/silverbullet/lib/ref";
+import { NavigationMap } from "../../shared/global.ts";
 
 export const excerptBefore = 100;
 export const excerptAfter = 300;
@@ -33,8 +34,10 @@ export type IndexableEntry = {
     content: string;
 }
 
-export type CompleteEntry = IndexableEntry & {
+export type CacheEntry = IndexableEntry & {
     cleanedContent: string;
     // deno-lint-ignore no-explicit-any
     metadata: Record<string, any>;
+    cacheMode: "persistent" | "session";
+    navigationMap?: NavigationMap | undefined;
 }

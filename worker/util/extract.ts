@@ -1,20 +1,29 @@
 import { getNameFromPath, isMarkdownPath, Path } from "@silverbulletmd/silverbullet/lib/ref";
 import { space, events } from "@silverbulletmd/silverbullet/syscalls";
 import { DocumentMeta, PageMeta } from "@silverbulletmd/silverbullet/type/index";
+import * as v from "@valibot/valibot"
+import { NavigationMap } from "../../shared/global.ts";
 
-// Maybe we want to add some stuff in the future
-type ExtractionResult = {
+export type ExtractionInfo = {
+    // If a document took a lot of processing power to generate,it makes sense to store it across reloads
+    cacheMode: "persistent" | "session";
+    navigationMap?: NavigationMap | undefined;
+};
+
+export type ExtractionResult = {
     content: string;
-}
+} & ExtractionInfo;
 
-function isExtractionResult(input: unknown): input is ExtractionResult {
-    return !!input && typeof input === "object" && "content" in input && typeof input.content === "string";
-}
+const extractionResultSchema = v.strictObject({
+    content: v.string(),
+    cacheMode: v.optional(v.picklist(["persistent", "session"]), "session"),
+    navigationMap: v.optional(v.array(v.object({ type: v.literal("range"), from: v.number(), to: v.number(), tail: v.string() })))
+});
 
-export async function extractContentByPath(path: Path, cachedMeta?: PageMeta | DocumentMeta): Promise<string | null> {
+export async function extractContentByPath(path: Path, cachedMeta?: PageMeta | DocumentMeta): Promise<ExtractionResult | null> {
     if (isMarkdownPath(path)) {
         try {
-            return await space.readPage(getNameFromPath(path));
+            return { content: await space.readPage(getNameFromPath(path)), cacheMode: "session" };
         } catch {
             return null;
         }
@@ -39,12 +48,12 @@ export async function extractContentByPath(path: Path, cachedMeta?: PageMeta | D
             console.log(`[silversearch] We got multiple responses while indexing ${meta.name}. Can't handle that.`);
         }
 
-        const result = results[0];
-        if (!isExtractionResult(result)) {
+        const result = v.safeParse(extractionResultSchema, results[0]);
+        if (!result.success) {
             console.log(`[silversearch] Eventhandler didn't return well-formed result. Discarding it.`)
             return null;
         }
 
-        return result.content;
+        return result.output;
     }
 }

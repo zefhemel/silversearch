@@ -60,7 +60,7 @@ export function removeDiacritics(str: string, arabic = false): string {
 }
 
 export function removeStrayDiacritics(str: string): string {
-    return str.replace(diacriticsRegex, "");
+    return str.replace(new RegExp(`(?!\\^\\\`)${diacriticsRegex.source}`), "");
 }
 
 export function getGroups(matches: SearchMatch[]): SearchMatch[][] {

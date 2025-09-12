@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { ResultPage } from "../../shared/global.js";
     import { debounce } from "../util/debounce.js";
+    import { solveNavigationMap } from "../util/mapSolver.js";
     import ModalContainer from "./ModalContainer.svelte";
     import ResultSpace from "./ResultSpace.svelte";
     import SearchTips from "./SearchTips.svelte";
@@ -56,9 +57,14 @@
         const result = results[selectedIndex];
         const offset = result.matches?.[0]?.offset ?? 0;
 
+        let tail = `@${offset}`;
+        if (result.navigationMap) {
+            tail = solveNavigationMap(result.navigationMap, offset);
+        }
+
         await syscall(
             "editor.navigate",
-            `${result.name}@${offset}`,
+            `${result.name}${tail}`,
             false,
             openInNewTab,
         );

@@ -5,18 +5,18 @@ import { Query } from "./query.ts";
 import { getPlugConfig, SilversearchSettings } from "./settings.ts";
 import { tokenizeForIndexing, tokenizeForSearch } from "./tokenizer.ts";
 import { getGroups, removeDiacritics, removeStrayDiacritics, stripMarkdownCharacters, trackPromiseProgress } from "./utils.ts";
-import { CompleteEntry, IndexableEntry, RecencyCutoff } from "./global.ts";
+import { CacheEntry, IndexableEntry, RecencyCutoff } from "./global.ts";
 import { getMatches, makeExcerpt } from "./textprocessing.ts";
 import { ResultExcerpt, ResultPage } from "../../shared/global.ts";
 import { getNameFromPath, isMarkdownPath, Path } from "@silverbulletmd/silverbullet/lib/ref";
 import { fileName, folderName } from "@silverbulletmd/silverbullet/lib/resolve";
-import { extractContentByPath } from "./extract.ts";
+import { extractContentByPath, ExtractionInfo } from "./extract.ts";
 
-const cacheVersion = 2;
+const cacheVersion = 3;
 
 export class SearchEngine {
     private minisearch: MiniSearch;
-    private entryCache: Map<string, CompleteEntry>;
+    private entryCache: Map<string, CacheEntry>;
 
     constructor(settings: SilversearchSettings) {
         this.minisearch = new MiniSearch(SearchEngine.getOptions(settings));
@@ -26,7 +26,7 @@ export class SearchEngine {
     public static async loadFromCache(settings: SilversearchSettings): Promise<SearchEngine | null> {
         const cache = await clientStore.get("silversearch-cache");
 
-        if (!cache || cache.version !== cacheVersion || typeof (cache.minisearch) !== "string") {
+        if (!cache || cache.version !== cacheVersion || typeof (cache.minisearch) !== "string" || typeof (cache.entries) !== "object") {
             console.log("[Silversearch] Couldn't find cache or cache version mismatched");
             SearchEngine.deleteCache();
 
@@ -36,6 +36,8 @@ export class SearchEngine {
         const searchEngine = new SearchEngine(settings);
 
         searchEngine.minisearch = await MiniSearch.loadJSONAsync(cache.minisearch, SearchEngine.getOptions(settings));
+
+        searchEngine.entryCache = new Map(cache.entries)
 
         return searchEngine;
     }
@@ -48,11 +50,12 @@ export class SearchEngine {
         await clientStore.set("silversearch-cache", {
             version: cacheVersion,
             minisearch: JSON.stringify(this.minisearch),
+            entries: Array.from(this.entryCache.entries()).filter(entry => entry[1].cacheMode === "persistent"),
         });
     }
 
     public async reindex(): Promise<void> {
-        await editor.flashNotification("Silversearch - Fully reindexing, this can cause performance problems");
+        await editor.flashNotification("Silversearch - Reindexing, this can cause performance problems");
         this.minisearch.removeAll();
 
         // We could also use listDocuments and listPages, overhead is probably
@@ -72,7 +75,7 @@ export class SearchEngine {
             }
         );
 
-        await this.minisearch.addAllAsync(entries.filter(entry => !!entry));
+        await this.minisearch.addAllAsync(entries.filter(entry => !!entry).map(entry => entry.entry));
 
         await this.writeToCache();
 
@@ -89,9 +92,10 @@ export class SearchEngine {
             try {
                 console.log(`[Silversearch] Indexing ${getNameFromPath(path)}`);
 
-                const entry = await SearchEngine.pathToIndexableEntry(path);
-                if (!entry) throw null;
+                const result = await SearchEngine.pathToIndexableEntry(path);
+                if (!result) throw null;
 
+                const entry = result.entry;
                 if (this.minisearch.has(entry.path)) this.minisearch.replace(entry);
                 else this.minisearch.add(entry);
             } catch {
@@ -207,10 +211,7 @@ export class SearchEngine {
             return results.filter(r => r.id === options.singleFilePath);
         }
 
-        // TODO: This could be heavy on performance. We should also use a map here
-        const documents = (await Promise.all(
-            results.map(async result => await this.getCompleteEntry(result.id))
-        )).filter((doc) => !!doc);
+        const documents = await this.getCacheEntries(results.map(result => result.id));
 
         // Extract tags from the query
         const tags = query.getTags();
@@ -293,9 +294,7 @@ export class SearchEngine {
             singleFilePath: options?.singleFilePath,
         });
 
-        const documents = (await Promise.all(
-            results.map(async result => await this.getCompleteEntry(result.id))
-        )).filter((doc) => !!doc);
+        const documents = await this.getCacheEntries(results.map(result => result.id));
 
         // Map the raw results to get usable suggestions
         const resultNotes = await Promise.all(results.map(async result => {
@@ -363,7 +362,10 @@ export class SearchEngine {
                 matches,
                 matchesName,
                 excerpts,
-                ...note,
+                name: note.name,
+                basename: note.basename,
+                content: note.content,
+                navigationMap: note.navigationMap,
             };
             return resultNote;
         }));
@@ -371,42 +373,59 @@ export class SearchEngine {
         return resultNotes.filter(result => result !== null);
     }
 
-    private async getCompleteEntry(path: Path): Promise<CompleteEntry | null> {
-        let meta: PageMeta | DocumentMeta;
+    private async getCacheEntries(paths: Path[]): Promise<CacheEntry[]> {
+        const entries: CacheEntry[] = [];
 
-        try {
-            const name = getNameFromPath(path);
+        let dirty = false;
+        for (const path of paths) {
+            let meta: PageMeta | DocumentMeta;
 
-            meta = isMarkdownPath(path)
-                ? await space.getPageMeta(name)
-                : await space.getDocumentMeta(name);
-        } catch {
-            console.log("[Silversearch] Couldn't find the specified page:", path);
+            try {
+                const name = getNameFromPath(path);
 
-            return null;
+                meta = isMarkdownPath(path)
+                    ? await space.getPageMeta(name)
+                    : await space.getDocumentMeta(name);
+            } catch {
+                console.log("[Silversearch] Couldn't find the specified page:", path);
+
+                continue;
+            }
+
+            const cached = this.entryCache.get(path);
+            if (cached && new Date(meta.lastModified).getTime() === cached.lastModified) {
+                entries.push(cached);
+                continue;
+            }
+
+            const result = await SearchEngine.pathToIndexableEntry(path, meta);
+            if (!result) continue;
+
+            // TODO: This is cursed, move this out of here
+            const metadata = Object.fromEntries(Object.entries(meta).filter(([key, _]) => !["ref", "tag", "tags", "itags", "name", "created", "lastModified", "perm", "lastOpened", "pageDecoration", "aliases", "extension", "size", "contentType"].includes(key)));
+
+            const entry = {
+                ...result.entry,
+                ...result.info,
+                cleanedContent: stripMarkdownCharacters(removeDiacritics(result.entry.content)),
+                metadata
+            }
+
+            dirty = dirty || result.info.cacheMode === "persistent";
+
+            this.entryCache.set(path, entry);
+
+            entries.push(entry);
         }
 
-        const cached = this.entryCache.get(path);
-        if (cached && new Date(meta.lastModified).getTime() === cached.lastModified) return cached;
-
-        const result = await SearchEngine.pathToIndexableEntry(path, meta);
-        if (!result) return null;
-
-        // TODO: This is cursed, move this out of here
-        const metadata = Object.fromEntries(Object.entries(meta).filter(([key, _]) => !["ref", "tag", "tags", "itags", "name", "created", "lastModified", "perm", "lastOpened", "pageDecoration", "aliases", "extension", "size", "contentType"].includes(key)));
-
-        const entry = {
-            ...result,
-            cleanedContent: stripMarkdownCharacters(removeDiacritics(result.content)),
-            metadata
+        if (dirty) {
+            this.writeToCache();
         }
 
-        this.entryCache.set(path, entry);
-
-        return entry;
+        return entries;
     }
 
-    private static async pathToIndexableEntry(path: Path, cachedMeta?: PageMeta | DocumentMeta): Promise<IndexableEntry | null> {
+    private static async pathToIndexableEntry(path: Path, cachedMeta?: PageMeta | DocumentMeta): Promise<{ entry: IndexableEntry, info: ExtractionInfo } | null> {
         const name = getNameFromPath(path);
 
         let meta;
@@ -416,8 +435,8 @@ export class SearchEngine {
             return null;
         }
 
-        let content = await extractContentByPath(path, meta);
-        if (!content) {
+        const result = await extractContentByPath(path, meta);
+        if (!result) {
             return null;
         }
 
@@ -425,7 +444,7 @@ export class SearchEngine {
         // later when removing diatrics in e.g. `getMatches`, because the
         // offsets won't match between the cleaned string and the original
         // string
-        content = removeStrayDiacritics(content);
+        const content = removeStrayDiacritics(result.content);
 
         const entry: IndexableEntry = {
             path,
@@ -440,7 +459,8 @@ export class SearchEngine {
             lastModified: new Date(meta.lastModified).getTime(),
         };
 
-        return entry;
+        const { content: _, ...info } = result;
+        return { entry, info };
     }
 
     private isIndexedPath(path: Path) {
