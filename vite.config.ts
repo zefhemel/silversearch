@@ -5,7 +5,7 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 async function wrapFile(path: string) {
     const content = await fs.readFile(path, "utf8");
 
-    const text = `export default \`${content.replaceAll("\\", "\\\\").replaceAll("$", "\\$").replaceAll("\`", "\\\`")}\``;
+    const text = `export default ${JSON.stringify(content)}`;
 
     await fs.writeFile(`${path}.ts`, text);
 }
