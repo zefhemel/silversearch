@@ -30,7 +30,7 @@ export async function extractContentByPath(path: Path, cachedMeta?: PageMeta | D
         try {
             results = await events.dispatchEvent("silversearch:index", { meta }) as unknown[];
         } catch {
-            console.log(`[silversearch] Eventhandler threw errors. Discarding it.`)
+            console.log(`[silversearch] Eventhandler threw error. Discarding it.`)
             return null;
         }
 
