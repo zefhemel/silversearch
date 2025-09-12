@@ -59,6 +59,10 @@ export function removeDiacritics(str: string, arabic = false): string {
     return str;
 }
 
+export function removeStrayDiacritics(str: string): string {
+    return str.replace(diacriticsRegex, "");
+}
+
 export function getGroups(matches: SearchMatch[]): SearchMatch[][] {
     const groups: SearchMatch[][] = [];
     let lastOffset = -1;

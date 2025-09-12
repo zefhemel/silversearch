@@ -4,12 +4,13 @@ import { SearchResult, Options, default as MiniSearch } from "minisearch"
 import { Query } from "./query.ts";
 import { getPlugConfig, SilversearchSettings } from "./settings.ts";
 import { tokenizeForIndexing, tokenizeForSearch } from "./tokenizer.ts";
-import { getGroups, removeDiacritics, stripMarkdownCharacters, trackPromiseProgress } from "./utils.ts";
+import { getGroups, removeDiacritics, removeStrayDiacritics, stripMarkdownCharacters, trackPromiseProgress } from "./utils.ts";
 import { CompleteEntry, IndexableEntry, RecencyCutoff } from "./global.ts";
 import { getMatches, makeExcerpt } from "./textprocessing.ts";
 import { ResultExcerpt, ResultPage } from "../../shared/global.ts";
 import { getNameFromPath, isMarkdownPath, Path } from "@silverbulletmd/silverbullet/lib/ref";
 import { fileName, folderName } from "@silverbulletmd/silverbullet/lib/resolve";
+import { extractContentByPath } from "./extract.ts";
 
 const cacheVersion = 2;
 
@@ -408,15 +409,23 @@ export class SearchEngine {
     private static async pathToIndexableEntry(path: Path, cachedMeta?: PageMeta | DocumentMeta): Promise<IndexableEntry | null> {
         const name = getNameFromPath(path);
 
-        let meta, content;
+        let meta;
         try {
-            [meta, content] = isMarkdownPath(path)
-                ? [cachedMeta ?? await space.getPageMeta(name), await space.readPage(name)]
-                // TODO: Extract content for documents
-                : [cachedMeta ?? await space.getDocumentMeta(name), ""];
+            meta = cachedMeta ?? (isMarkdownPath(path) ? await space.getPageMeta(name) : await space.getDocumentMeta(name));
         } catch {
             return null;
         }
+
+        let content = await extractContentByPath(path, meta);
+        if (!content) {
+            return null;
+        }
+
+        // Remove any stray diatrics. Not doing this could cause problems
+        // later when removing diatrics in e.g. `getMatches`, because the
+        // offsets won't match between the cleaned string and the original
+        // string
+        content = removeStrayDiacritics(content);
 
         const entry: IndexableEntry = {
             path,
