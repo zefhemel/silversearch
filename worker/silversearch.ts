@@ -68,7 +68,7 @@ export async function indexPage({ name }: IndexTreeEvent) {
     else await searchEngine.indexByPath(path);
 }
 
-export async function indexDocument({ name }: IndexTreeEvent) {
+export async function indexDocument(name: string) {
     const path: Path = name as Path;
     if (!searchEngine) actionQueue.push({ action: "index", path });
     else await searchEngine.indexByPath(path);
