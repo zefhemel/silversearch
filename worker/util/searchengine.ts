@@ -373,56 +373,74 @@ export class SearchEngine {
         return resultNotes.filter(result => result !== null);
     }
 
+    private runningCacheProcesses: Map<Path, Promise<CacheEntry | null>> = new Map();
     private async getCacheEntries(paths: Path[]): Promise<CacheEntry[]> {
-        const entries: CacheEntry[] = [];
-
+        // Due to the way deboucing works on the frontend, this can be called
+        // multiple times, this could lead to multiple fetches for e.g. pdfs and
+        // a big traffic jam, because it would render a pdf 10 times. To
+        // mitigate this, we'll cache the promises in the
+        // `runningCacheProcesses` map. This is a little cursed, but increases
+        // the load times quite a bit
         let dirty = false;
-        for (const path of paths) {
-            let meta: PageMeta | DocumentMeta;
-
-            try {
-                const name = getNameFromPath(path);
-
-                meta = isMarkdownPath(path)
-                    ? await space.getPageMeta(name)
-                    : await space.getDocumentMeta(name);
-            } catch {
-                console.log("[Silversearch] Couldn't find the specified page:", path);
-
-                continue;
+        const promises = paths.map(async path => {
+            if (this.runningCacheProcesses.has(path)) {
+                return this.runningCacheProcesses.get(path);
             }
 
-            const cached = this.entryCache.get(path);
-            if (cached && new Date(meta.lastModified).getTime() === cached.lastModified) {
-                entries.push(cached);
-                continue;
-            }
+            const promise = this.getCacheEntry(path);
+            this.runningCacheProcesses.set(path, promise);
 
-            const result = await SearchEngine.pathToIndexableEntry(path, meta);
-            if (!result) continue;
+            const entry = await promise;
+            this.runningCacheProcesses.delete(path);
+            dirty = dirty || entry?.cacheMode === "persistent";
+            return entry;
+        });
 
-            // TODO: This is cursed, move this out of here
-            const metadata = Object.fromEntries(Object.entries(meta).filter(([key, _]) => !["ref", "tag", "tags", "itags", "name", "created", "lastModified", "perm", "lastOpened", "pageDecoration", "aliases", "extension", "size", "contentType"].includes(key)));
-
-            const entry = {
-                ...result.entry,
-                ...result.info,
-                cleanedContent: stripMarkdownCharacters(removeDiacritics(result.entry.content)),
-                metadata
-            }
-
-            dirty = dirty || result.info.cacheMode === "persistent";
-
-            this.entryCache.set(path, entry);
-
-            entries.push(entry);
-        }
+        const entries = await Promise.all(promises);
 
         if (dirty) {
             this.writeToCache();
         }
 
-        return entries;
+        return entries.filter(entry => !!entry);
+    }
+
+    private async getCacheEntry(path: Path): Promise<CacheEntry | null> {
+        let meta: PageMeta | DocumentMeta;
+
+        try {
+            const name = getNameFromPath(path);
+
+            meta = isMarkdownPath(path)
+                ? await space.getPageMeta(name)
+                : await space.getDocumentMeta(name);
+        } catch {
+            console.log("[Silversearch] Couldn't find the specified page:", path);
+
+            return null;
+        }
+
+        const cached = this.entryCache.get(path);
+        if (cached && new Date(meta.lastModified).getTime() === cached.lastModified) {
+            return cached;
+        }
+
+        const result = await SearchEngine.pathToIndexableEntry(path, meta);
+        if (!result) return null;
+
+        // TODO: This is cursed, move this out of here
+        const metadata = Object.fromEntries(Object.entries(meta).filter(([key, _]) => !["ref", "tag", "tags", "itags", "name", "created", "lastModified", "perm", "lastOpened", "pageDecoration", "aliases", "extension", "size", "contentType"].includes(key)));
+
+        const entry = {
+            ...result.entry,
+            ...result.info,
+            cleanedContent: stripMarkdownCharacters(removeDiacritics(result.entry.content)),
+            metadata
+        }
+
+        this.entryCache.set(path, entry);
+
+        return entry;
     }
 
     private static async pathToIndexableEntry(path: Path, cachedMeta?: PageMeta | DocumentMeta): Promise<{ entry: IndexableEntry, info: ExtractionInfo } | null> {
