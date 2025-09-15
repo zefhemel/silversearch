@@ -18,13 +18,32 @@ Then, run the `Plugs: Update` update command to download and install the plug.
 
 ## Usage
 
-You can open the search dialog using the `Silversearch: Search` command (`Ctrl-s`/`Cmd-s`). Simply start typing to begin your search, helpful tips for refining your searches will appear at the start. If Silversearch is missing the most up-to-date content, you can rebuild the search database using the `Silversearch: Full Reindex` command.
+You can open the search dialog using the `Silversearch: Search` command (`Ctrl-s`/`Cmd-s`). Simply start typing to begin your search, helpful tips for refining your searches will appear at the start. If Silversearch is missing the most up-to-date content, you can rebuild the search database using the `Silversearch: Reindex` command. If you rebuild Silverbullets index, Silversearch will also rebuild, so there is no need to run both commands.
+
+## API
 
 To integrate Silversearch with SpaceLua, use the following syscalls:
 
-- `silversearch.search(searchTerm: string, singleFilePath?: string): ResultPage[]`: Searches the database using the `searchTerm`, which supports all functions the normal search also supports (e.g. `ext`, etc.). If `singleFilePath` is provided it will only search the provided file. The function will return an array of [`ResultPage`](https://github.com/MrMugame/silversearch/blob/5c4a3b57a8f92336c5e2b1ae29ff9d4b668cd470/shared/global.ts#L6)
+- `silversearch.search(searchTerm: string, singleFilePath?: string): Promise<ResultPage[]>`: Searches the database using the `searchTerm`, which supports all functions the normal search also supports (e.g. `ext`, etc.). If `singleFilePath` is provided it will only search the provided file. The function will return an array of [`ResultPage`](https://github.com/MrMugame/silversearch/blob/5c4a3b57a8f92336c5e2b1ae29ff9d4b668cd470/shared/global.ts#L6)
 - `silversearch.openSearch(defaultQuery: string = ""): void`: This opens the search modal. If a default query is provided it will be inserted into the search field.
 - `silversearch.reindex(): void`: Rebuilds the search database.
+
+When Silversearch indexes a document, it will fire an event `silversearch:index` to query the content, SpaceLua or another plug can respond to such an event and respond with content. If nobody responds, the document won't be indexed. If multiple listeners respond, an error will be thrown and the document also won't be indexed. The return type for any listener looks like this
+
+```ts
+type ExtractionResult = {
+  // The document content as a string, this should be fairly straightforward
+  content: string:
+  // If a document took a lot of processing power to generate, it makes
+  // sense to store it across reloads. The default is "session"
+  cacheMode?: "persistent" | "session";
+  // This type is defined in shared/global.ts. It's used to map an offset in
+  // the document content to a link tail (i.e `@42`, `#foo`). If a document
+  // viewer implements navigation based on that, it can navigate the offset of
+  // a search result to the correct place.
+  navigationMap?: NavigationMap | undefined;
+};
+```
 
 ## Settings
 
