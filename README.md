@@ -1,6 +1,6 @@
 # Silversearch
 
-This is a full-text searching plug for [Silverbullet](https://silverbullet.md/). The goal is maximum usability straight out of the box. It's *heavily* based and uses code from [Omnisearch](https://github.com/scambier/obsidian-omnisearch) for Obsidian (so give this guy a star not me) and also uses [Minisearch](https://github.com/lucaong/minisearch) under the hood. It indexes markdown files and when combined with other plugs it can index any document inside your space.
+This is a full-text searching plug for [Silverbullet](https://silverbullet.md/). The goal is maximum usability straight out of the box. It's *heavily* based and uses code from [Omnisearch](https://github.com/scambier/obsidian-omnisearch) for Obsidian (so give this guy a star not me) and also uses [Minisearch](https://github.com/lucaong/minisearch) under the hood. By default, it searches through markdown files and when combined with other plugs it can search inside any document across your space.
 
 ![](https://raw.githubusercontent.com/mrmugame/silversearch/main/docs/demo.webp)
 
