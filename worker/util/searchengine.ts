@@ -4,7 +4,7 @@ import { SearchResult, Options, default as MiniSearch } from "minisearch"
 import { Query } from "./query.ts";
 import { getPlugConfig, SilversearchSettings } from "./settings.ts";
 import { tokenizeForIndexing, tokenizeForSearch } from "./tokenizer.ts";
-import { getGroups, removeDiacritics, removeStrayDiacritics, stripMarkdownCharacters, trackPromiseProgress } from "./utils.ts";
+import { getGroups, removeDiacritics, removeStrayDiacritics, stripMarkdownCharacters } from "./utils.ts";
 import { CacheEntry, IndexableEntry, RecencyCutoff } from "./global.ts";
 import { getMatches, makeExcerpt } from "./textprocessing.ts";
 import { ResultExcerpt, ResultPage } from "../../shared/global.ts";
@@ -12,7 +12,7 @@ import { getNameFromPath, isMarkdownPath, Path } from "@silverbulletmd/silverbul
 import { fileName, folderName } from "@silverbulletmd/silverbullet/lib/resolve";
 import { extractContentByPath, ExtractionInfo } from "./extract.ts";
 
-const cacheVersion = 3;
+const cacheVersion = 4;
 
 export class SearchEngine {
     private minisearch: MiniSearch;
@@ -67,17 +67,13 @@ export class SearchEngine {
         console.log(`[Silversearch] Indexing ${files.length} pages`);
         await editor.showProgress(0, "index");
 
-        const entries = await trackPromiseProgress(
-            files.map(file => SearchEngine.pathToIndexableEntry(file)),
+        await this.indexByPaths(
+            files,
             (done, all) => {
                 // Don't await, we don't care
                 editor.showProgress(Math.round(done / all * 100), "index");
             }
-        );
-
-        await this.minisearch.addAllAsync(entries.filter(entry => !!entry).map(entry => entry.entry));
-
-        await this.writeToCache();
+        )
 
         await editor.showProgress();
         await editor.flashNotification("Silversearch - Full reindex done!");
@@ -87,17 +83,22 @@ export class SearchEngine {
         await this.indexByPaths([path]);
     }
 
-    public async indexByPaths(paths: Path[]): Promise<void> {
+    public async indexByPaths(paths: Path[], progressCallback?: (done: number, all: number) => void): Promise<void> {
+        let done = 0;
+
         for (const path of paths) {
             try {
                 console.log(`[Silversearch] Indexing ${getNameFromPath(path)}`);
 
-                const result = await SearchEngine.pathToIndexableEntry(path);
+                const result = await this.getCacheEntry(path);
                 if (!result) throw null;
 
-                const entry = result.entry;
-                if (this.minisearch.has(entry.path)) this.minisearch.replace(entry);
-                else this.minisearch.add(entry);
+                // TODO: Maybe use addAllAsync?
+                // We can just send the full cache entry here as the rest will just be ignored
+                if (this.minisearch.has(result.path)) this.minisearch.replace(result);
+                else this.minisearch.add(result);
+
+                if (progressCallback) progressCallback(++done, paths.length);
             } catch {
                 console.log(`[Silversearch] Failed to index ${getNameFromPath(path)}. Skipping!`);
             }
@@ -230,12 +231,12 @@ export class SearchEngine {
             }
 
 
-            const metadata = documents.find((d) => d.path === path)?.metadata;
-            if (metadata) {
+            const document = documents.find((d) => d.path === path);
+            if (document) {
                 // Boost custom properties
                 for (const [name, weight] of Object.entries(settings.weightCustomProperties)) {
                     // Get frontmatter property
-                    const values = metadata[name];
+                    const values = document.metadata[name];
                     if (values && result.terms.some(t => values.includes(t))) {
                         result.score *= weight;
                     }
@@ -244,7 +245,7 @@ export class SearchEngine {
 
             // Put the results with tags on top
             for (const tag of tags) {
-                if ((result.tags ?? []).includes(tag)) {
+                if ((document?.tags ?? []).includes(tag)) {
                     result.score *= 100;
                 }
             }
@@ -381,7 +382,6 @@ export class SearchEngine {
         // mitigate this, we'll cache the promises in the
         // `runningCacheProcesses` map. This is a little cursed, but increases
         // the load times quite a bit
-        let dirty = false;
         const promises = paths.map(async path => {
             if (this.runningCacheProcesses.has(path)) {
                 return this.runningCacheProcesses.get(path);
@@ -392,21 +392,23 @@ export class SearchEngine {
 
             const entry = await promise;
             this.runningCacheProcesses.delete(path);
-            dirty = dirty || entry?.cacheMode === "persistent";
             return entry;
         });
 
         const entries = await Promise.all(promises);
-
-        if (dirty) {
-            this.writeToCache();
-        }
 
         return entries.filter(entry => !!entry);
     }
 
     private async getCacheEntry(path: Path): Promise<CacheEntry | null> {
         let meta: PageMeta | DocumentMeta;
+
+        const cached = this.entryCache.get(path);
+        // Don't compare timestamps here, we will trust that the minisearch
+        // index and our entryCache is in sync
+        if (cached) {
+            return cached;
+        }
 
         try {
             const name = getNameFromPath(path);
@@ -415,14 +417,9 @@ export class SearchEngine {
                 ? await space.getPageMeta(name)
                 : await space.getDocumentMeta(name);
         } catch {
-            console.log("[Silversearch] Couldn't find the specified page:", path);
+            console.log("[Silversearch] Couldn't find the specified file:", path);
 
             return null;
-        }
-
-        const cached = this.entryCache.get(path);
-        if (cached && new Date(meta.lastModified).getTime() === cached.lastModified) {
-            return cached;
         }
 
         const result = await SearchEngine.pathToIndexableEntry(path, meta);
@@ -435,7 +432,8 @@ export class SearchEngine {
             ...result.entry,
             ...result.info,
             cleanedContent: stripMarkdownCharacters(removeDiacritics(result.entry.content)),
-            metadata
+            metadata,
+            tags: meta.tags?.map((tag) => "#" + tag) ?? [],
         }
 
         this.entryCache.set(path, entry);
@@ -468,11 +466,10 @@ export class SearchEngine {
             path,
             name,
             content,
-            aliases: meta.aliases ?? [],
-            displayName: meta.displayName ?? "",
             basename: fileName(name),
             directory: folderName(name),
-            tags: meta.tags?.map((tag) => "#" + tag) ?? [],
+            aliases: meta.aliases ?? [],
+            displayName: meta.displayName ?? "",
             unmarkedTags: meta.tags ?? [],
             lastModified: new Date(meta.lastModified).getTime(),
         };
@@ -498,11 +495,11 @@ export class SearchEngine {
                 "basename",
                 "directory",
                 "aliases",
-                "displayName"
+                "displayName",
+                "unmarkedTags"
             ],
             storeFields: [
                 "lastModified",
-                "tags"
             ]
         }
     }

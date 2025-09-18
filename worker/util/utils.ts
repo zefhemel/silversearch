@@ -87,17 +87,3 @@ function getGroupedMatches(
         m => m.offset > offsetFrom && m.offset <= first.offset + maxLen
     );
 }
-
-export function trackPromiseProgress<T>(promises: Promise<T>[], onProgress: (done: number, all: number) => void): Promise<T[]> {
-    let done = 0;
-
-    const wrapped = promises.map(promise =>
-        promise.then(result => {
-            done++;
-            onProgress(done, promises.length);
-            return result;
-        })
-    );
-
-    return Promise.all(wrapped);
-}

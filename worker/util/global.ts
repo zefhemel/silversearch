@@ -24,7 +24,6 @@ export type IndexableEntry = {
     name: string;
     basename: string;
     directory: string;
-    tags: string[];
     unmarkedTags: string[];
     lastModified: number;
     displayName: string;
@@ -40,4 +39,5 @@ export type CacheEntry = IndexableEntry & {
     metadata: Record<string, any>;
     cacheMode: "persistent" | "session";
     navigationMap?: NavigationMap | undefined;
+    tags: string[];
 }
