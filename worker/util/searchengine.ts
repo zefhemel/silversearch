@@ -90,6 +90,9 @@ export class SearchEngine {
             try {
                 console.log(`[Silversearch] Indexing ${getNameFromPath(path)}`);
 
+                // Make sure we don't just get the entry from the cache
+                this.entryCache.delete(path);
+
                 const result = await this.getCacheEntry(path);
                 if (!result) throw null;
 
