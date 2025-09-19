@@ -69,7 +69,7 @@ To integrate Silversearch with SpaceLua, use the following syscalls:
 - `silversearch.openSearch(defaultQuery: string = ""): void`: This opens the search modal. If a default query is provided it will be inserted into the search field.
 - `silversearch.reindex(): void`: Rebuilds the search database.
 
-When Silversearch indexes a document, it will fire an event `silversearch:index` to query the content, SpaceLua or another plug can respond to such an event and respond with content. If nobody responds, the document won't be indexed. If multiple listeners respond, an error will be thrown and the document also won't be indexed. The return type for any listener looks like this
+When Silversearch indexes a document, it will fire the `silversearch:index` event to query the content. SpaceLua or plugs can respond with content. If nobody responds, the document won't be indexed. If multiple listeners respond, an error will be thrown and the document also won't be indexed. The return type for listeners looks like this
 
 ```ts
 type ExtractionResult = {
