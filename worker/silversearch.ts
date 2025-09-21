@@ -9,7 +9,7 @@ import { SearchEngine } from "./util/searchengine.ts";
 import { Query } from "./util/query.ts";
 import { getCustomStyles, getPlugConfig } from "./util/settings.ts";
 import { ResultPage } from "../shared/global.ts";
-import { publicVersion } from "../dist/public_version.ts";
+import { version } from "../dist/version.ts";
 
 // So this will be a global variable in a service worker, so the lifetime is kind of uncertain, especially if
 // we don't have direct access to events, i.e. we can't trust that this exists AT ALL
@@ -100,5 +100,5 @@ export async function reindex() {
 }
 
 export async function showVersion() {
-    await editor.flashNotification(`Silversearch - Version ${publicVersion}`);
+    await editor.flashNotification(`Silversearch - Version ${version}`);
 }
