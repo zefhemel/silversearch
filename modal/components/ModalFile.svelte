@@ -9,8 +9,8 @@
 
     let {
         query = $bindable(),
-        currentPage,
-    }: { query: string; currentPage: string } = $props();
+        currentPath,
+    }: { query: string; currentPath: string } = $props();
 
     let result: ResultPage | null = $state(null);
     let searching = $state(false);
@@ -46,7 +46,7 @@
                     syscall(
                         "silversearch.search",
                         query,
-                        currentPage,
+                        currentPath,
                     ) as Promise<ResultPage[]>,
                     waitPromise.promise,
                 ])

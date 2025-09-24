@@ -4,11 +4,11 @@
 
     const {
         defaultQuery,
-        currentPage,
+        currentPath,
         isDocumentEditor,
     }: {
         defaultQuery: string;
-        currentPage: string;
+        currentPath: string;
         isDocumentEditor: boolean;
     } = $props();
 
@@ -33,6 +33,6 @@
     {#if spaceModal}
         <ModalSpace bind:query {isDocumentEditor} />
     {:else}
-        <ModalFile bind:query {currentPage} />
+        <ModalFile bind:query {currentPath} />
     {/if}
 </div>
