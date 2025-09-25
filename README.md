@@ -82,7 +82,7 @@ type ExtractionResult = {
   // the document content to a link tail (i.e `@42`, `#foo`). If a document
   // viewer implements navigation based on that, it can navigate the offset of
   // a search result to the correct place.
-  navigationMap?: NavigationMap | undefined;
+  navigationMap?: NavigationMap;
 };
 ```
 
