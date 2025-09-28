@@ -116,11 +116,6 @@ export class SearchEngine {
 
     public async deleteByPaths(paths: Path[]): Promise<void> {
         for (const path of paths) {
-            if (!(await space.fileExists(path))) {
-                // Silverbullet probably fucked up here, let's just ignore it
-                continue;
-            }
-
             try {
                 this.minisearch.discard(path);
             } catch {
