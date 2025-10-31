@@ -1,5 +1,8 @@
 ---
 tags: meta/library
+assets:
+- file: silversearch.plug.js
+  target: /_plug/silversearch.plug.js
 ---
 # Silversearch
 
