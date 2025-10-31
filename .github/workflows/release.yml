@@ -40,4 +40,5 @@ jobs:
         with:
           draft: false
           files: |
+            README.md
             silversearch.plug.js
